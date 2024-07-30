@@ -75,7 +75,7 @@ const FirstTable = ({
         header: "Grade Points",
         muiEditTextFieldProps: {
           type: "number",
-          inputProps: { min: 0, max: 4, step: 0.01 },
+          inputProps: { min: 0, step: 0.01 },
           required: true,
           error: !!validationErrors["gradePoints"],
           onFocus: () =>

@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { useTheme } from "@mui/material/styles";
-
 import {
   Box,
   Button,
@@ -15,23 +14,28 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import {
   type MRT_ColumnDef,
   type MRT_TableOptions,
-  type MRT_Row,
   MaterialReactTable,
   MRT_EditActionButtons,
   useMaterialReactTable,
 } from "material-react-table";
-
-import DeleteDialogTable from "./DeleteDialogTable";
-
-
 import { useSnackbar } from "notistack";
+import type { GpaNewCourse, GpaRepeatCourse } from "App";
+import type { GradeValueLabel } from "constants/gradeValueLabel";
+
+function isRepeatCourse(
+  course: GpaNewCourse | GpaRepeatCourse
+): course is GpaRepeatCourse {
+  return (course as GpaRepeatCourse).oldGrade !== undefined;
+}
 
 interface RepeatTableProps {
   isRepeat: boolean;
-  data: GpaCalculatorRepeatCourseResponse[] | GpaCalculatorNewCourseResponse[];
+  data: GpaRepeatCourse[] | GpaNewCourse[];
   semGpa: number;
-  gpaRecordId: string;
-  gradeLabels: GradesLabelValueResponse[];
+  gradeLabels: GradeValueLabel[];
+  updateAction: (course: GpaNewCourse | GpaRepeatCourse) => void;
+  addAction: (course: GpaNewCourse | GpaRepeatCourse) => void;
+  deleteAction: (id: string, isRepeat: boolean) => void;
 }
 
 interface TableRow {
@@ -43,29 +47,19 @@ interface TableRow {
   credit: number;
   points?: number;
   semPoints: number;
-  editedBy: string;
-}
-
-function isRepeatCourse(
-  course: GpaCalculatorRepeatCourseResponse | GpaCalculatorNewCourseResponse
-): course is GpaCalculatorRepeatCourseResponse {
-  return (course as GpaCalculatorRepeatCourseResponse).oldGrade !== undefined;
 }
 
 const CourseTable = ({
   isRepeat,
   data,
   semGpa,
-  gpaRecordId,
   gradeLabels,
+  updateAction,
+  addAction,
+  deleteAction,
 }: RepeatTableProps) => {
   const theme = useTheme();
   const { enqueueSnackbar } = useSnackbar();
-
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
-  const [deleteRecordID, setDeleteRecordID] = useState<string>("");
-
-  const fetcher = useFetcher();
 
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string | undefined>
@@ -82,9 +76,8 @@ const CourseTable = ({
           isRepeat && isRepeatCourse(course) ? course.newGrade : undefined,
         grade: !isRepeat && !isRepeatCourse(course) ? course.grade : undefined,
         credit: course.credit,
-        points: isRepeat ? course.points : undefined,
+        points: isRepeat && isRepeatCourse(course) ? course.points : undefined,
         semPoints: course.semPoints,
-        editedBy: course.editedBy,
       })),
     [data, isRepeat]
   );
@@ -203,14 +196,6 @@ const CourseTable = ({
         size: 80,
         Edit: () => null,
       },
-
-      {
-        accessorKey: "editedBy",
-        header: "Edited By",
-        enableEditing: false,
-        size: 80,
-        Edit: () => null,
-      },
     ],
     [validationErrors, gradeLabels, isRepeat]
   );
@@ -231,33 +216,20 @@ const CourseTable = ({
 
       setValidationErrors({});
 
-      const newRecord = {
-        gpaCalculator: gpaRecordId,
+      const newCourse = {
+        id: new Date().toISOString(),
         code: values.code,
+        credit: values.credit,
         ...(isRepeat
           ? { oldGrade: values.oldGrade, newGrade: values.newGrade }
           : { grade: values.grade }),
-        credit: values.credit,
-        actionType: isRepeat ? "addCourseRepeatTable" : "addCourseNewTable",
+        semPoints: 0, // Calculate this value based on your logic
       };
 
-      const formData = new FormData();
-      Object.entries(newRecord).forEach(([key, value]) => {
-        formData.append(key, value);
-      });
-
-      fetcher.submit(formData, {
-        method: "POST",
-        action: "",
-      });
+      addAction(newCourse as GpaRepeatCourse | GpaNewCourse);
 
       table.setCreatingRow(null);
     };
-
-  const openDeleteConfirmModal = (row: MRT_Row<TableRow>) => {
-    setDeleteRecordID(row.original.id);
-    setDeleteDialogOpen(true);
-  };
 
   const handleSaveCourse: MRT_TableOptions<TableRow>["onEditingRowSave"] =
     async ({ values, table, row }) => {
@@ -296,28 +268,31 @@ const CourseTable = ({
         }
       }
 
-      const newRecord = {
-        id: row.original.id,
-        code: values.code,
-        ...(isRepeat
-          ? { oldGrade: values.oldGrade, newGrade: values.newGrade }
-          : { grade: values.grade }),
-        credit: values.credit.toString(),
-        actionType: isRepeat ? "editCourseRepeatTable" : "editCourseNewTable",
-      };
-
-      const formData = new FormData();
-      Object.entries(newRecord).forEach(([key, value]) => {
-        formData.append(key, value);
-      });
-
-      fetcher.submit(formData, {
-        method: "POST",
-        action: "",
-      });
+      if (isRepeat) {
+        const newRecord = {
+          id: row.original.id,
+          code: values.code,
+          oldGrade: values.oldGrade,
+          newGrade: values.newGrade,
+          credit: values.credit,
+        };
+        updateAction(newRecord as GpaRepeatCourse);
+      } else {
+        const newRecord = {
+          id: row.original.id,
+          code: values.code,
+          grade: values.grade,
+          credit: values.credit,
+        };
+        updateAction(newRecord as GpaNewCourse);
+      }
 
       table.setEditingRow(null);
     };
+
+  const handleDeleteAction = (id: string) => {
+    deleteAction(id, isRepeat); // Pass `isRepeat` when calling `deleteAction`
+  };
 
   const table = useMaterialReactTable({
     columns,
@@ -381,7 +356,10 @@ const CourseTable = ({
           </IconButton>
         </Tooltip>
         <Tooltip title="Delete">
-          <IconButton color="error" onClick={() => openDeleteConfirmModal(row)}>
+          <IconButton
+            color="error"
+            onClick={() => handleDeleteAction(row.original.id)}
+          >
             <DeleteIcon
               sx={{
                 fontSize: "1rem",
@@ -444,17 +422,7 @@ const CourseTable = ({
     },
   });
 
-  return (
-    <>
-      <DeleteDialogTable
-        isRepeat={isRepeat}
-        open={deleteDialogOpen}
-        setOpen={setDeleteDialogOpen}
-        recordID={deleteRecordID}
-      />
-      <MaterialReactTable table={table} />
-    </>
-  );
+  return <MaterialReactTable table={table} />;
 };
 
 export default CourseTable;

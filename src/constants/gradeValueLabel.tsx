@@ -1,11 +1,11 @@
-interface GradeValueLabel {
+export interface GradeValueLabel {
   value: number;
   label: string;
 }
 
 export const gradeValueLabel: GradeValueLabel[] = [
   { value: 4, label: "A" },
-  { value: 3.75, label: "A-" },
+  { value: 3.7, label: "A-" },
   { value: 3.3, label: "B+" },
   { value: 3, label: "B" },
   { value: 2.7, label: "B-" },

@@ -1,12 +1,16 @@
 import { useState } from "react";
-
 import FirstTable from "components/FirstTable";
-
-// import CourseTable from "components/CourseTable";
+import CourseTable from "components/CourseTable";
 import { Typography, Divider, Box } from "@mui/material";
-// import { enqueueSnackbar, closeSnackbar } from "notistack";
+import { useSnackbar } from "notistack";
+import { gradeValueLabel as gradeLabels } from "constants/gradeValueLabel";
+import {
+  findCourse,
+  calculateSemPointsAndPoints,
+  calculateSemPoints,
+} from "helpers";
 
-// import { gradeValueLabel as gradeLabels } from "constants/gradeValueLabel";
+import DeleteDialogTable from "components/DeleteDialogTable";
 
 export interface GpaRecord {
   semGpaRepeat: number;
@@ -51,17 +55,98 @@ export default function GpaCalculatorMain() {
     overallSemGpa: 0,
   });
 
-  // const [gpaRepeatCourse, setGpaRepeatCourse] = useState<GpaRepeatCourse[]>([]);
-  // const [gpaNewCourse, setGpaNewCourse] = useState<GpaNewCourse[]>([]);
+  const [gpaRepeatCourses, setGpaRepeatCourses] = useState<GpaRepeatCourse[]>(
+    []
+  );
+  const [gpaNewCourses, setGpaNewCourses] = useState<GpaNewCourse[]>([]);
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
+  const [deleteRecordID, setDeleteRecordID] = useState<string>("");
+  const [isRepeat, setIsRepeat] = useState<boolean>(true); // Add this state
+
+  const { enqueueSnackbar } = useSnackbar();
+
+  const handleUpdateCourse = (course: GpaNewCourse | GpaRepeatCourse) => {
+    if ("oldGrade" in course) {
+      if (findCourse(gpaNewCourses, course.code)) {
+        enqueueSnackbar("Course already exists in the new course list", {
+          variant: "error",
+        });
+        return;
+      }
+
+      const { semPoints, points } = calculateSemPointsAndPoints(course);
+      course.points = points;
+      course.semPoints = semPoints;
+
+      setGpaRepeatCourses((prevCourses) =>
+        prevCourses.map((c) => (c.id === course.id ? course : c))
+      );
+    } else {
+      if (findCourse(gpaRepeatCourses, course.code)) {
+        enqueueSnackbar("Course already exists in the repeat course list", {
+          variant: "error",
+        });
+        return;
+      }
+
+      const semPoints = calculateSemPoints(course);
+      course.semPoints = semPoints;
+
+      setGpaNewCourses((prevCourses) =>
+        prevCourses.map((c) => (c.id === course.id ? course : c))
+      );
+    }
+  };
+
+  const handleAddCourse = (course: GpaNewCourse | GpaRepeatCourse) => {
+    if ("oldGrade" in course) {
+      if (findCourse(gpaNewCourses, course.code)) {
+        enqueueSnackbar("Course already exists in the new course list", {
+          variant: "error",
+        });
+        return;
+      }
+
+      const { semPoints, points } = calculateSemPointsAndPoints(course);
+      course.points = points;
+      course.semPoints = semPoints;
+
+      setGpaRepeatCourses((prevCourses) => [...prevCourses, course]);
+    } else {
+      if (findCourse(gpaRepeatCourses, course.code)) {
+        enqueueSnackbar("Course already exists in the repeat course list", {
+          variant: "error",
+        });
+        return;
+      }
+
+      const semPoints = calculateSemPoints(course);
+      course.semPoints = semPoints;
+
+      setGpaNewCourses((prevCourses) => [...prevCourses, course]);
+    }
+  };
+
+  const handleDeleteCourse = (id: string, isRepeat: boolean) => {
+    if (isRepeat) {
+      setGpaRepeatCourses((prevCourses) =>
+        prevCourses.filter((c) => c.id !== id)
+      );
+    } else {
+      setGpaNewCourses((prevCourses) => prevCourses.filter((c) => c.id !== id));
+    }
+    enqueueSnackbar("Course deleted successfully", { variant: "success" });
+  };
+
+  const openDeleteConfirmModal = (id: string, isRepeat: boolean) => {
+    setDeleteRecordID(id);
+    setDeleteDialogOpen(true);
+    setIsRepeat(isRepeat); // Add this line to set the `isRepeat` state
+  };
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        width: "100%",
-        overflowX: "hidden",
-      }}
-    >
+    <Box sx={{ display: "flex", width: "100%", overflowX: "hidden" }}>
       <Box
         sx={{
           display: "flex",
@@ -76,28 +161,57 @@ export default function GpaCalculatorMain() {
             GPA Calculator
           </Typography>
           <FirstTable gpaRecord={gpaRecord} setGpaRecord={setGpaRecord} />
-          {/* <Divider textAlign="center" sx={{ marginY: "2rem", paddingTop: "40px" }}>
-        Repeating Courses
-      </Divider>
-      <CourseTable
-        isRepeat={true}
-        data={gpaRepeatCourse}
-        semGpa={gpaRecord.semGpaRepeat}
-        gpaRecordId={gpaRecord.id}
-        gradeLabels={gradeLabels}
-      />
-      <Divider textAlign="center" sx={{ marginY: "2rem", paddingTop: "40px" }}>
-        New Courses
-      </Divider>
-      <CourseTable
-        isRepeat={false}
-        data={gpaNewCourse}
-        semGpa={gpaRecord.semGpaNew}
-        gpaRecordId={gpaRecord.id}
-        gradeLabels={gradeLabels}
-      /> */}
+          <Divider
+            textAlign="center"
+            sx={{
+              marginY: "2rem",
+              paddingTop: "40px",
+              fontFamily: "Arial, sans-serif",
+              fontSize: "16px",
+              color: "red",
+            }}
+          >
+            Repeating Courses
+          </Divider>
+          <CourseTable
+            isRepeat={true}
+            data={gpaRepeatCourses}
+            semGpa={gpaRecord.semGpaRepeat}
+            gradeLabels={gradeLabels}
+            updateAction={handleUpdateCourse}
+            addAction={handleAddCourse}
+            deleteAction={openDeleteConfirmModal}
+          />
+          <Divider
+            textAlign="center"
+            sx={{
+              marginY: "2rem",
+              paddingTop: "40px",
+              fontFamily: "Arial, sans-serif",
+              fontSize: "16px",
+              color: "red",
+            }}
+          >
+            New Courses
+          </Divider>
+          <CourseTable
+            isRepeat={false}
+            data={gpaNewCourses}
+            semGpa={gpaRecord.semGpaNew}
+            gradeLabels={gradeLabels}
+            updateAction={handleUpdateCourse}
+            addAction={handleAddCourse}
+            deleteAction={openDeleteConfirmModal}
+          />
         </Box>
       </Box>
+      <DeleteDialogTable
+        open={deleteDialogOpen}
+        setOpen={setDeleteDialogOpen}
+        recordID={deleteRecordID}
+        deleteAction={handleDeleteCourse} // Use correct delete action
+        isRepeat={isRepeat} // Pass isRepeat flag
+      />
     </Box>
   );
 }
