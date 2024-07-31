@@ -1,12 +1,17 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import FirstTable from "components/FirstTable";
 import CourseTable from "components/CourseTable";
 import { Typography, Divider, Box } from "@mui/material";
-import { useSnackbar } from "notistack";
+import { useSnackbar, closeSnackbar } from "notistack";
 import { gradeValueLabel as gradeLabels } from "constants/gradeValueLabel";
-import { calculateSemPointsAndPoints, calculateSemPoints } from "helpers";
+import {
+  calculateSemPointsAndPoints,
+  calculateSemPoints,
+  willExceedMaxCGPA,
+} from "helpers";
 import DeleteDialogTable from "components/DeleteDialogTable";
+import Gpa4Error from "Gpa4Error";
 
 export interface GpaRecord {
   semGpaRepeat: number;
@@ -40,6 +45,9 @@ export interface GpaNewCourse {
 
 export default function GpaCalculatorMain() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const [errorDialogOpen, setErrorDialogOpen] = useState(false);
+
+  const navigate = useNavigate();
 
   const initialGpaRecord = {
     semGpaRepeat: Number(searchParams.get("semGpaRepeat")) || 0,
@@ -74,6 +82,10 @@ export default function GpaCalculatorMain() {
   const [isRepeat, setIsRepeat] = useState<boolean>(true);
 
   const { enqueueSnackbar } = useSnackbar();
+  const handleCloseErrorDialog = () => {
+    setErrorDialogOpen(false);
+    navigate(0); // Refresh the page to bring back repeat table data
+  };
 
   useEffect(() => {
     calculateGpaValues();
@@ -142,6 +154,18 @@ export default function GpaCalculatorMain() {
 
   const handleUpdateCourse = (course: GpaNewCourse | GpaRepeatCourse) => {
     if ("oldGrade" in course) {
+      if (
+        willExceedMaxCGPA(
+          gpaRecord,
+          course,
+          gpaRepeatCourses,
+          gpaNewCourses,
+          true
+        )
+      ) {
+        setErrorDialogOpen(true);
+        return;
+      }
       const { semPoints, points } = calculateSemPointsAndPoints(course);
       course.points = points;
       course.semPoints = semPoints;
@@ -162,6 +186,18 @@ export default function GpaCalculatorMain() {
 
   const handleAddCourse = (course: GpaNewCourse | GpaRepeatCourse) => {
     if ("oldGrade" in course) {
+      if (
+        willExceedMaxCGPA(gpaRecord, course, gpaRepeatCourses, gpaNewCourses)
+      ) {
+        enqueueSnackbar("Expected CGPA cannot exceed 4.00", {
+          variant: "error",
+          autoHideDuration: 10000,
+          SnackbarProps: {
+            onClick: () => closeSnackbar(),
+          },
+        });
+        return;
+      }
       const { semPoints, points } = calculateSemPointsAndPoints(course);
       course.points = points;
       course.semPoints = semPoints;
@@ -263,6 +299,7 @@ export default function GpaCalculatorMain() {
         deleteAction={handleDeleteCourse}
         isRepeat={isRepeat}
       />
+      <Gpa4Error open={errorDialogOpen} handleClose={handleCloseErrorDialog} />
     </Box>
   );
 }
