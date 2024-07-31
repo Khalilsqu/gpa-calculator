@@ -43,7 +43,7 @@ export interface GpaNewCourse {
   semPoints: number;
 }
 
-export default function GpaCalculatorMain() {
+export default function App() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [errorDialogOpen, setErrorDialogOpen] = useState(false);
 
