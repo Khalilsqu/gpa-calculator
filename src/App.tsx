@@ -243,7 +243,7 @@ export default function GpaCalculatorMain() {
       >
         <Box sx={{ overflowX: "auto", width: "100%" }}>
           <Typography variant="h5" align="center" sx={{ margin: "2rem 0" }}>
-            GPA Calculator
+            GPA Calculator - Probation students
           </Typography>
           <FirstTable gpaRecord={gpaRecord} setGpaRecord={setGpaRecord} />
           <Divider
