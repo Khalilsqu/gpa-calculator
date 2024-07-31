@@ -253,11 +253,11 @@ export default function App() {
           display: "flex",
           flexDirection: "column",
           width: "100%",
-          padding: "2rem",
+          padding: { xs: "0.7rem", sm: "2rem" },
           overflowX: "hidden",
         }}
       >
-        <Box sx={{ overflowX: "auto", width: "100%" }}>
+        <Box sx={{ overflowX: { xs: "scroll", sm: "auto" }, width: "100%" }}>
           <Typography variant="h5" align="center" sx={{ margin: "2rem 0" }}>
             GPA Calculator - Probation students
           </Typography>

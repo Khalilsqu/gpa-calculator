@@ -9,6 +9,7 @@ import {
   IconButton,
   Tooltip,
   Typography,
+  useMediaQuery,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -62,6 +63,7 @@ const CourseTable = ({
   deleteAction,
 }: RepeatTableProps) => {
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const { enqueueSnackbar } = useSnackbar();
 
   const [validationErrors, setValidationErrors] = useState<
@@ -311,8 +313,8 @@ const CourseTable = ({
   const table = useMaterialReactTable({
     columns,
     data: tableData,
-    editDisplayMode: "row",
-    createDisplayMode: isRepeat ? "modal" : "row",
+    editDisplayMode: isMobile ? "modal" : "row",
+    createDisplayMode: "modal",
     enableEditing: true,
     getRowId: (row) => row.id,
     enableSorting: false,
@@ -418,6 +420,7 @@ const CourseTable = ({
     muiTablePaperProps: {
       elevation: 0,
       sx: {
+        overflowX: { xs: "scroll", sm: "auto" },
         borderRadius: "5px",
         border: `1px dotted ${
           theme.palette.mode === "dark" ? "#444242" : "#b3c0b3"

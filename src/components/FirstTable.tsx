@@ -270,6 +270,7 @@ const FirstTable = ({
     muiTablePaperProps: {
       elevation: 0, //change the mui box shadow
       sx: {
+        overflowX: { xs: "scroll", sm: "auto" },
         borderRadius: "5px",
         border: `1px solid ${
           theme.palette.mode === "dark" ? "#444242" : "#b3c0b3"
