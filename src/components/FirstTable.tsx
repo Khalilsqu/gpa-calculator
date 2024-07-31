@@ -173,10 +173,15 @@ const FirstTable = ({
         Number(gpaRecord.currentAttemptedCredits) +
         Number(updatedData[0].creditsAttempted);
 
-      const expectedCGPA = expectedGradePoints / expectedAttemptedCredits;
+      let expectedCGPA = expectedGradePoints / expectedAttemptedCredits;
 
-      if (isNaN(expectedCGPA)) {
-        // attempted credits is 0
+      // check if expectedCGPA is NaN or infinity
+
+      if (Number(expectedAttemptedCredits) === 0 || isNaN(expectedCGPA)) {
+        expectedCGPA = 0;
+      }
+
+      if (Number(updatedData[0].creditsAttempted) === 0 || isNaN(cgpa)) {
         cgpa = 0;
       }
 

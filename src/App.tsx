@@ -147,8 +147,10 @@ export default function GpaCalculatorMain() {
       ? (expectedGradePoints / expectedAttemptedCredits).toFixed(2)
       : "0.00";
 
-    if (isNaN(parseFloat(expectedCGPA))) {
-      // expected attemepted credits is 0
+    if (
+      Number(expectedAttemptedCredits) === 0 ||
+      isNaN(parseFloat(expectedCGPA))
+    ) {
       expectedCGPA = "0.00";
     }
 
