@@ -13,6 +13,8 @@ export const calculateSemPointsAndPoints = (course: GpaRepeatCourse) => {
     points = semPoints - gradeValueOld.value * course.credit;
   }
 
+  points = parseFloat(points.toFixed(2));
+
   return { semPoints, points };
 };
 

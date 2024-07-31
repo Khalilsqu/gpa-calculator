@@ -1,14 +1,11 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import FirstTable from "components/FirstTable";
 import CourseTable from "components/CourseTable";
 import { Typography, Divider, Box } from "@mui/material";
 import { useSnackbar } from "notistack";
 import { gradeValueLabel as gradeLabels } from "constants/gradeValueLabel";
-import {
-  calculateSemPointsAndPoints,
-  calculateSemPoints,
-} from "helpers";
-
+import { calculateSemPointsAndPoints, calculateSemPoints } from "helpers";
 import DeleteDialogTable from "components/DeleteDialogTable";
 
 export interface GpaRecord {
@@ -42,26 +39,39 @@ export interface GpaNewCourse {
 }
 
 export default function GpaCalculatorMain() {
-  const [gpaRecord, setGpaRecord] = useState<GpaRecord>({
-    semGpaRepeat: 0,
-    semGpaNew: 0,
-    currentGradePoints: 0,
-    currentAttemptedCredits: 0,
-    currentCGPA: 0,
-    expectedGradePoints: 0,
-    expectedAttemptedCredits: 0,
-    expectedCGPA: 0,
-    overallSemGpa: 0,
-  });
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [gpaRepeatCourses, setGpaRepeatCourses] = useState<GpaRepeatCourse[]>(
-    []
+  const initialGpaRecord = {
+    semGpaRepeat: Number(searchParams.get("semGpaRepeat")) || 0,
+    semGpaNew: Number(searchParams.get("semGpaNew")) || 0,
+    currentGradePoints: Number(searchParams.get("currentGradePoints")) || 0,
+    currentAttemptedCredits:
+      Number(searchParams.get("currentAttemptedCredits")) || 0,
+    currentCGPA: Number(searchParams.get("currentCGPA")) || 0,
+    expectedGradePoints: Number(searchParams.get("expectedGradePoints")) || 0,
+    expectedAttemptedCredits:
+      Number(searchParams.get("expectedAttemptedCredits")) || 0,
+    expectedCGPA: Number(searchParams.get("expectedCGPA")) || 0,
+    overallSemGpa: Number(searchParams.get("overallSemGpa")) || 0,
+  };
+
+  const initialGpaRepeatCourses = JSON.parse(
+    searchParams.get("gpaRepeatCourses") || "[]"
   );
-  const [gpaNewCourses, setGpaNewCourses] = useState<GpaNewCourse[]>([]);
+  const initialGpaNewCourses = JSON.parse(
+    searchParams.get("gpaNewCourses") || "[]"
+  );
+
+  const [gpaRecord, setGpaRecord] = useState<GpaRecord>(initialGpaRecord);
+  const [gpaRepeatCourses, setGpaRepeatCourses] = useState<GpaRepeatCourse[]>(
+    initialGpaRepeatCourses
+  );
+  const [gpaNewCourses, setGpaNewCourses] =
+    useState<GpaNewCourse[]>(initialGpaNewCourses);
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
   const [deleteRecordID, setDeleteRecordID] = useState<string>("");
-  const [isRepeat, setIsRepeat] = useState<boolean>(true); // Add this state
+  const [isRepeat, setIsRepeat] = useState<boolean>(true);
 
   const { enqueueSnackbar } = useSnackbar();
 
@@ -69,6 +79,18 @@ export default function GpaCalculatorMain() {
     calculateGpaValues();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gpaRepeatCourses, gpaNewCourses]);
+
+  useEffect(() => {
+    const params = {
+      ...Object.keys(gpaRecord).reduce((acc: Record<string, string>, key) => {
+        acc[key] = gpaRecord[key as keyof GpaRecord].toString();
+        return acc;
+      }, {}),
+      gpaRepeatCourses: JSON.stringify(gpaRepeatCourses),
+      gpaNewCourses: JSON.stringify(gpaNewCourses),
+    };
+    setSearchParams(params);
+  }, [gpaRecord, gpaRepeatCourses, gpaNewCourses, setSearchParams]);
 
   const calculateGpaValues = () => {
     const sumSemPointsRepeat = gpaRepeatCourses.reduce((acc, course) => {
@@ -81,13 +103,11 @@ export default function GpaCalculatorMain() {
     }, 0);
 
     const sumSemPointsNew = gpaNewCourses.reduce((acc, course) => {
-      console.log(`Adding ${course.semPoints} from course:`, course);
       return acc + course.semPoints;
     }, 0);
 
     const sumCreditsNew = gpaNewCourses.reduce((acc, course) => {
       const credit = Number(course.credit);
-      console.log(`Adding ${credit} from course:`, course);
       return acc + credit;
     }, 0);
 
@@ -137,31 +157,23 @@ export default function GpaCalculatorMain() {
         prevCourses.map((c) => (c.id === course.id ? course : c))
       );
     }
-    calculateGpaValues(); // Recalculate GPA values immediately
+    calculateGpaValues();
   };
 
   const handleAddCourse = (course: GpaNewCourse | GpaRepeatCourse) => {
     if ("oldGrade" in course) {
-
       const { semPoints, points } = calculateSemPointsAndPoints(course);
       course.points = points;
       course.semPoints = semPoints;
 
       setGpaRepeatCourses((prevCourses) => [...prevCourses, course]);
     } else {
-      if (findCourse(gpaRepeatCourses, course.code)) {
-        enqueueSnackbar("Course already exists in the repeat course list", {
-          variant: "error",
-        });
-        return;
-      }
-
       const semPoints = calculateSemPoints(course);
       course.semPoints = semPoints;
 
       setGpaNewCourses((prevCourses) => [...prevCourses, course]);
     }
-    calculateGpaValues(); // Recalculate GPA values immediately
+    calculateGpaValues();
   };
 
   const handleDeleteCourse = (id: string, isRepeat: boolean) => {
@@ -173,13 +185,13 @@ export default function GpaCalculatorMain() {
       setGpaNewCourses((prevCourses) => prevCourses.filter((c) => c.id !== id));
     }
     enqueueSnackbar("Course deleted successfully", { variant: "success" });
-    calculateGpaValues(); // Recalculate GPA values immediately
+    calculateGpaValues();
   };
 
   const openDeleteConfirmModal = (id: string, isRepeat: boolean) => {
     setDeleteRecordID(id);
     setDeleteDialogOpen(true);
-    setIsRepeat(isRepeat); // Add this line to set the `isRepeat` state
+    setIsRepeat(isRepeat);
   };
 
   return (
@@ -248,8 +260,8 @@ export default function GpaCalculatorMain() {
         open={deleteDialogOpen}
         setOpen={setDeleteDialogOpen}
         recordID={deleteRecordID}
-        deleteAction={handleDeleteCourse} // Use correct delete action
-        isRepeat={isRepeat} // Pass isRepeat flag
+        deleteAction={handleDeleteCourse}
+        isRepeat={isRepeat}
       />
     </Box>
   );
