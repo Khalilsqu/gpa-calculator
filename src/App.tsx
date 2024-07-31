@@ -5,7 +5,6 @@ import { Typography, Divider, Box } from "@mui/material";
 import { useSnackbar } from "notistack";
 import { gradeValueLabel as gradeLabels } from "constants/gradeValueLabel";
 import {
-  findCourse,
   calculateSemPointsAndPoints,
   calculateSemPoints,
 } from "helpers";
@@ -143,12 +142,6 @@ export default function GpaCalculatorMain() {
 
   const handleAddCourse = (course: GpaNewCourse | GpaRepeatCourse) => {
     if ("oldGrade" in course) {
-      if (findCourse(gpaNewCourses, course.code)) {
-        enqueueSnackbar("Course already exists in the new course list", {
-          variant: "error",
-        });
-        return;
-      }
 
       const { semPoints, points } = calculateSemPointsAndPoints(course);
       course.points = points;

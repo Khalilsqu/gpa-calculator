@@ -1,10 +1,6 @@
 import { gradeValueLabel as gradeLabels } from "constants/gradeValueLabel";
 import { GpaNewCourse, GpaRepeatCourse } from "App";
 
-export const findCourse = (
-  courses: GpaNewCourse[] | GpaRepeatCourse[],
-  code: string
-) => courses.find((c) => c.code === code);
 
 export const calculateSemPointsAndPoints = (course: GpaRepeatCourse) => {
   const gradeValueNew = gradeLabels.find((g) => g.label === course.newGrade);

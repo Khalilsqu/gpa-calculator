@@ -211,6 +211,10 @@ const CourseTable = ({
         isRepeat,
       });
 
+      if (otherDataCodes.includes(values.code)) {
+        errors["code"] = "Course code already exists in the other table";
+      }
+
       if (Object.keys(errors).length > 0) {
         setValidationErrors(errors);
         return;
