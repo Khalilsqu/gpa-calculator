@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import FirstTable from "components/FirstTable";
 import CourseTable from "components/CourseTable";
 import { Typography, Divider, Box } from "@mui/material";
@@ -66,12 +66,75 @@ export default function GpaCalculatorMain() {
 
   const { enqueueSnackbar } = useSnackbar();
 
+  useEffect(() => {
+    calculateGpaValues();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gpaRepeatCourses, gpaNewCourses]);
+
+  const calculateGpaValues = () => {
+    const sumSemPointsRepeat = gpaRepeatCourses.reduce((acc, course) => {
+      return acc + course.semPoints;
+    }, 0);
+
+    const sumCreditsRepeat = gpaRepeatCourses.reduce((acc, course) => {
+      const credit = Number(course.credit);
+      return acc + credit;
+    }, 0);
+
+    const sumSemPointsNew = gpaNewCourses.reduce((acc, course) => {
+      console.log(`Adding ${course.semPoints} from course:`, course);
+      return acc + course.semPoints;
+    }, 0);
+
+    const sumCreditsNew = gpaNewCourses.reduce((acc, course) => {
+      const credit = Number(course.credit);
+      console.log(`Adding ${credit} from course:`, course);
+      return acc + credit;
+    }, 0);
+
+    const semGpaRepeat = sumCreditsRepeat
+      ? sumSemPointsRepeat / sumCreditsRepeat
+      : 0;
+    const semGpaNew = sumCreditsNew ? sumSemPointsNew / sumCreditsNew : 0;
+
+    const totalSemPoints = sumSemPointsRepeat + sumSemPointsNew;
+    const totalCredits = sumCreditsRepeat + sumCreditsNew;
+
+    const overallSemGpa = totalCredits ? totalSemPoints / totalCredits : 0;
+
+    const expectedGradePoints =
+      sumSemPointsRepeat + sumSemPointsNew + gpaRecord.currentGradePoints;
+    const expectedAttemptedCredits =
+      sumCreditsNew + gpaRecord.currentAttemptedCredits;
+    const expectedCGPA = expectedAttemptedCredits
+      ? (expectedGradePoints / expectedAttemptedCredits).toFixed(2)
+      : "0.00";
+
+    setGpaRecord((prevRecord) => ({
+      ...prevRecord,
+      semGpaRepeat: semGpaRepeat,
+      semGpaNew: semGpaNew,
+      overallSemGpa: overallSemGpa,
+      expectedGradePoints: expectedGradePoints,
+      expectedAttemptedCredits: expectedAttemptedCredits,
+      expectedCGPA: parseFloat(expectedCGPA),
+    }));
+  };
+
   const handleUpdateCourse = (course: GpaNewCourse | GpaRepeatCourse) => {
     if ("oldGrade" in course) {
-      if (findCourse(gpaNewCourses, course.code)) {
-        enqueueSnackbar("Course already exists in the new course list", {
-          variant: "error",
-        });
+      if (
+        findCourse(gpaNewCourses, course.code) ||
+        gpaRepeatCourses.some(
+          (c) => c.code === course.code && c.id !== course.id
+        )
+      ) {
+        enqueueSnackbar(
+          "Course already exists in the new course list or another repeat course",
+          {
+            variant: "error",
+          }
+        );
         return;
       }
 
@@ -83,10 +146,16 @@ export default function GpaCalculatorMain() {
         prevCourses.map((c) => (c.id === course.id ? course : c))
       );
     } else {
-      if (findCourse(gpaRepeatCourses, course.code)) {
-        enqueueSnackbar("Course already exists in the repeat course list", {
-          variant: "error",
-        });
+      if (
+        findCourse(gpaRepeatCourses, course.code) ||
+        gpaNewCourses.some((c) => c.code === course.code && c.id !== course.id)
+      ) {
+        enqueueSnackbar(
+          "Course already exists in the repeat course list or another new course",
+          {
+            variant: "error",
+          }
+        );
         return;
       }
 
@@ -97,6 +166,7 @@ export default function GpaCalculatorMain() {
         prevCourses.map((c) => (c.id === course.id ? course : c))
       );
     }
+    calculateGpaValues(); // Recalculate GPA values immediately
   };
 
   const handleAddCourse = (course: GpaNewCourse | GpaRepeatCourse) => {
@@ -126,6 +196,7 @@ export default function GpaCalculatorMain() {
 
       setGpaNewCourses((prevCourses) => [...prevCourses, course]);
     }
+    calculateGpaValues(); // Recalculate GPA values immediately
   };
 
   const handleDeleteCourse = (id: string, isRepeat: boolean) => {
@@ -137,6 +208,7 @@ export default function GpaCalculatorMain() {
       setGpaNewCourses((prevCourses) => prevCourses.filter((c) => c.id !== id));
     }
     enqueueSnackbar("Course deleted successfully", { variant: "success" });
+    calculateGpaValues(); // Recalculate GPA values immediately
   };
 
   const openDeleteConfirmModal = (id: string, isRepeat: boolean) => {

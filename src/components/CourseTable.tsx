@@ -165,7 +165,7 @@ const CourseTable = ({
         header: "Credit",
         muiEditTextFieldProps: {
           type: "number",
-          inputProps: { min: 1, max: 6 },
+          inputProps: { min: 1, max: 6, step: 1 },
           required: true,
           placeholder: "1 to 6",
           error: !!validationErrors["credit"],
