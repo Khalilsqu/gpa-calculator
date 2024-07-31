@@ -20,9 +20,10 @@ import {
   MRT_EditActionButtons,
   useMaterialReactTable,
 } from "material-react-table";
-import { useSnackbar } from "notistack";
-import type { GpaNewCourse, GpaRepeatCourse } from "App";
+import { useSnackbar, closeSnackbar } from "notistack";
+import type { GpaNewCourse, GpaRepeatCourse, GpaRecord } from "App";
 import type { GradeValueLabel } from "constants/gradeValueLabel";
+import { willExceedMaxCGPA } from "helpers";
 
 function isRepeatCourse(
   course: GpaNewCourse | GpaRepeatCourse
@@ -30,10 +31,11 @@ function isRepeatCourse(
   return (course as GpaRepeatCourse).oldGrade !== undefined;
 }
 
-interface RepeatTableProps {
+interface TableProps {
   isRepeat: boolean;
-  data: GpaRepeatCourse[] | GpaNewCourse[];
-  otherDataCodes: string[];
+  repeatData: GpaRepeatCourse[];
+  newData: GpaNewCourse[];
+  gpaRecord: GpaRecord;
   semGpa: number;
   gradeLabels: GradeValueLabel[];
   updateAction: (course: GpaNewCourse | GpaRepeatCourse) => void;
@@ -54,14 +56,15 @@ interface TableRow {
 
 const CourseTable = ({
   isRepeat,
-  data,
-  otherDataCodes,
+  repeatData,
+  newData,
+  gpaRecord,
   semGpa,
   gradeLabels,
   updateAction,
   addAction,
   deleteAction,
-}: RepeatTableProps) => {
+}: TableProps) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const { enqueueSnackbar } = useSnackbar();
@@ -69,6 +72,8 @@ const CourseTable = ({
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string | undefined>
   >({});
+
+  const data = isRepeat ? repeatData : newData;
 
   const tableData = useMemo<TableRow[]>(
     () =>
@@ -217,8 +222,18 @@ const CourseTable = ({
         isRepeat,
       });
 
-      if (otherDataCodes.includes(values.code)) {
-        errors["code"] = "Course code already exists in the other table";
+      if (isRepeat) {
+        const otherDataCodes = newData.map((course) => course.code);
+
+        if (otherDataCodes.includes(values.code)) {
+          errors["code"] = "Course code already exists in the other table";
+        }
+      } else {
+        const otherDataCodes = repeatData.map((course) => course.code);
+
+        if (otherDataCodes.includes(values.code)) {
+          errors["code"] = "Course code already exists in the other table";
+        }
       }
 
       if (Object.keys(errors).length > 0) {
@@ -230,7 +245,7 @@ const CourseTable = ({
 
       const newCourse = {
         id: new Date().toISOString(),
-        code: values.code,
+        code: values.code.toUpperCase(),
         credit: values.credit,
         ...(isRepeat
           ? { oldGrade: values.oldGrade, newGrade: values.newGrade }
@@ -238,6 +253,28 @@ const CourseTable = ({
         semPoints: 0, // Calculate this value based on your logic
       };
 
+      // check if expected C.GPA is greater than 4
+
+      if (isRepeat) {
+        if (
+          willExceedMaxCGPA(
+            gpaRecord,
+            newCourse as GpaRepeatCourse,
+            repeatData,
+            newData
+          )
+        ) {
+          enqueueSnackbar(
+            "Adding this course with the current values will exceed the maximum expected C.GPA of 4.0",
+            {
+              variant: "error",
+              autoHideDuration: 10000,
+              SnackbarProps: { onClick: () => closeSnackbar() },
+            }
+          );
+          return;
+        }
+      }
       addAction(newCourse as GpaRepeatCourse | GpaNewCourse);
 
       table.setCreatingRow(null);
@@ -252,8 +289,18 @@ const CourseTable = ({
         isRepeat,
       });
 
-      if (otherDataCodes.includes(values.code)) {
-        errors["code"] = "Course code already exists in the other table";
+      if (isRepeat) {
+        const otherDataCodes = newData.map((course) => course.code);
+
+        if (otherDataCodes.includes(values.code)) {
+          errors["code"] = "Course code already exists in the other table";
+        }
+      } else {
+        const otherDataCodes = repeatData.map((course) => course.code);
+
+        if (otherDataCodes.includes(values.code)) {
+          errors["code"] = "Course code already exists in the other table";
+        }
       }
 
       if (Object.keys(errors).length > 0) {
@@ -287,16 +334,37 @@ const CourseTable = ({
       if (isRepeat) {
         const newRecord = {
           id: row.original.id,
-          code: values.code,
+          code: values.code.toUpperCase(),
           oldGrade: values.oldGrade,
           newGrade: values.newGrade,
           credit: values.credit,
         };
+        // check if expected C.GPA is greater than 4
+        if (
+          willExceedMaxCGPA(
+            gpaRecord,
+            newRecord as GpaRepeatCourse,
+            repeatData,
+            newData,
+            true
+          )
+        ) {
+          enqueueSnackbar(
+            "Updating this course with the current values will exceed the maximum expected C.GPA of 4.0",
+            {
+              variant: "error",
+              autoHideDuration: 10000,
+              SnackbarProps: { onClick: () => closeSnackbar() },
+            }
+          );
+          return;
+        }
+
         updateAction(newRecord as GpaRepeatCourse);
       } else {
         const newRecord = {
           id: row.original.id,
-          code: values.code,
+          code: values.code.toUpperCase(),
           grade: values.grade,
           credit: values.credit,
         };
@@ -491,11 +559,10 @@ const validate = ({
     errors["code"] = "Course code must be exactly 8 characters";
   }
 
-  const codeRegExp = new RegExp("^[A-Z]{4}\\d{4}$");
+  const codeRegExp = new RegExp("^[a-zA-Z]{4}\\d{4}$");
 
   if (!codeRegExp.test(values.code)) {
-    errors["code"] =
-      "Course code must be 4 capital letters followed by 4 numbers";
+    errors["code"] = "Course code must be 4 letters followed by 4 numbers";
   }
 
   if (values.credit < 1 || values.credit > 9) {

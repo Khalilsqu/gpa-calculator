@@ -1,17 +1,12 @@
 import { useEffect, useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import FirstTable from "components/FirstTable";
 import CourseTable from "components/CourseTable";
 import { Typography, Divider, Box } from "@mui/material";
-import { useSnackbar, closeSnackbar } from "notistack";
+import { useSnackbar } from "notistack";
 import { gradeValueLabel as gradeLabels } from "constants/gradeValueLabel";
-import {
-  calculateSemPointsAndPoints,
-  calculateSemPoints,
-  willExceedMaxCGPA,
-} from "helpers";
+import { calculateSemPointsAndPoints, calculateSemPoints } from "helpers";
 import DeleteDialogTable from "components/DeleteDialogTable";
-import Gpa4Error from "components/Gpa4Error";
 
 export interface GpaRecord {
   semGpaRepeat: number;
@@ -45,9 +40,6 @@ export interface GpaNewCourse {
 
 export default function App() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [errorDialogOpen, setErrorDialogOpen] = useState(false);
-
-  const navigate = useNavigate();
 
   const initialGpaRecord = {
     semGpaRepeat: Number(searchParams.get("semGpaRepeat")) || 0,
@@ -82,10 +74,6 @@ export default function App() {
   const [isRepeat, setIsRepeat] = useState<boolean>(true);
 
   const { enqueueSnackbar } = useSnackbar();
-  const handleCloseErrorDialog = () => {
-    setErrorDialogOpen(false);
-    navigate(0); // Refresh the page to bring back repeat table data
-  };
 
   useEffect(() => {
     calculateGpaValues();
@@ -167,18 +155,6 @@ export default function App() {
 
   const handleUpdateCourse = (course: GpaNewCourse | GpaRepeatCourse) => {
     if ("oldGrade" in course) {
-      if (
-        willExceedMaxCGPA(
-          gpaRecord,
-          course,
-          gpaRepeatCourses,
-          gpaNewCourses,
-          true
-        )
-      ) {
-        setErrorDialogOpen(true);
-        return;
-      }
       const { semPoints, points } = calculateSemPointsAndPoints(course);
       course.points = points;
       course.semPoints = semPoints;
@@ -199,21 +175,6 @@ export default function App() {
 
   const handleAddCourse = (course: GpaNewCourse | GpaRepeatCourse) => {
     if ("oldGrade" in course) {
-      if (
-        willExceedMaxCGPA(gpaRecord, course, gpaRepeatCourses, gpaNewCourses)
-      ) {
-        enqueueSnackbar(
-          "Expected CGPA cannot exceed 4.00. Operation aborted.",
-          {
-            variant: "error",
-            autoHideDuration: 15000,
-            SnackbarProps: {
-              onClick: () => closeSnackbar(),
-            },
-          }
-        );
-        return;
-      }
       const { semPoints, points } = calculateSemPointsAndPoints(course);
       course.points = points;
       course.semPoints = semPoints;
@@ -276,8 +237,9 @@ export default function App() {
           </Divider>
           <CourseTable
             isRepeat={true}
-            data={gpaRepeatCourses}
-            otherDataCodes={gpaNewCourses.map((c) => c.code)}
+            repeatData={gpaRepeatCourses}
+            newData={gpaNewCourses}
+            gpaRecord={gpaRecord}
             semGpa={gpaRecord.semGpaRepeat}
             gradeLabels={gradeLabels}
             updateAction={handleUpdateCourse}
@@ -298,8 +260,9 @@ export default function App() {
           </Divider>
           <CourseTable
             isRepeat={false}
-            data={gpaNewCourses}
-            otherDataCodes={gpaRepeatCourses.map((c) => c.code)}
+            repeatData={gpaRepeatCourses}
+            newData={gpaNewCourses}
+            gpaRecord={gpaRecord}
             semGpa={gpaRecord.semGpaNew}
             gradeLabels={gradeLabels}
             updateAction={handleUpdateCourse}
@@ -315,7 +278,6 @@ export default function App() {
         deleteAction={handleDeleteCourse}
         isRepeat={isRepeat}
       />
-      <Gpa4Error open={errorDialogOpen} handleClose={handleCloseErrorDialog} />
     </Box>
   );
 }
