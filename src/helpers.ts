@@ -5,7 +5,9 @@ export const calculateSemPointsAndPoints = (course: GpaRepeatCourse) => {
   const gradeValueNew = gradeLabels.find((g) => g.label === course.newGrade);
   const gradeValueOld = gradeLabels.find((g) => g.label === course.oldGrade);
 
-  const semPoints = gradeValueNew ? gradeValueNew.value * course.credit : 0;
+  let semPoints = gradeValueNew ? gradeValueNew.value * course.credit : 0;
+
+  semPoints = parseFloat(semPoints.toFixed(2));
 
   let points = 0;
   if (gradeValueOld) {
@@ -19,7 +21,10 @@ export const calculateSemPointsAndPoints = (course: GpaRepeatCourse) => {
 
 export const calculateSemPoints = (course: GpaNewCourse) => {
   const gradeValue = gradeLabels.find((g) => g.label === course.grade);
-  return gradeValue ? gradeValue.value * course.credit : 0;
+  const semPoints = parseFloat(
+    (gradeValue ? gradeValue.value * course.credit : 0).toFixed(2)
+  );
+  return semPoints;
 };
 
 export const willExceedMaxCGPA = (
