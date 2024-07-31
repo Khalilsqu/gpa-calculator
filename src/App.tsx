@@ -202,13 +202,16 @@ export default function GpaCalculatorMain() {
       if (
         willExceedMaxCGPA(gpaRecord, course, gpaRepeatCourses, gpaNewCourses)
       ) {
-        enqueueSnackbar("Expected CGPA cannot exceed 4.00", {
-          variant: "error",
-          autoHideDuration: 10000,
-          SnackbarProps: {
-            onClick: () => closeSnackbar(),
-          },
-        });
+        enqueueSnackbar(
+          "Expected CGPA cannot exceed 4.00. Operation aborted.",
+          {
+            variant: "error",
+            autoHideDuration: 15000,
+            SnackbarProps: {
+              onClick: () => closeSnackbar(),
+            },
+          }
+        );
         return;
       }
       const { semPoints, points } = calculateSemPointsAndPoints(course);

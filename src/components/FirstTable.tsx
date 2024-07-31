@@ -78,6 +78,7 @@ const FirstTable = ({
           inputProps: { min: 0, step: 0.01 },
           required: true,
           error: !!validationErrors["gradePoints"],
+          helperText: validationErrors["gradePoints"],
           onFocus: () =>
             setValidationErrors((prev) => ({
               ...prev,
@@ -93,6 +94,7 @@ const FirstTable = ({
           inputProps: { min: 0, step: 1 },
           required: true,
           error: !!validationErrors["creditsAttempted"],
+          helperText: validationErrors["creditsAttempted"],
           onFocus: () =>
             setValidationErrors((prev) => ({
               ...prev,
@@ -113,27 +115,22 @@ const FirstTable = ({
   const handleSaveUser: MRT_TableOptions<TableRow>["onEditingRowSave"] =
     async ({ values, table }) => {
       const errors: Record<string, string> = {};
-      const fieldsToCheck = ["gradePoints", "creditsAttempted"];
 
-      fieldsToCheck.forEach((field) => {
-        if (values[field] === "") {
-          const columnHeader =
-            columns.find((column) => column.accessorKey === field)?.header ||
-            field;
-          errors[field] = `${columnHeader} cannot be empty`;
-        }
-      });
+      // check if required fields are empty
+
+      if (!values.gradePoints) {
+        errors["gradePoints"] = "Grade Points is required";
+      }
+
+      if (!values.creditsAttempted) {
+        errors["creditsAttempted"] = "Credits Attempted is required";
+      }
 
       if (values.gradePoints < 0) {
         errors["gradePoints"] = "Grade Points cannot be negative";
       }
       if (values.creditsAttempted < 0) {
         errors["creditsAttempted"] = "Credits Attempted cannot be negative";
-      }
-
-      if (Object.keys(errors).length > 0) {
-        setValidationErrors(errors);
-        return;
       }
 
       let cgpa = 0;
@@ -160,6 +157,16 @@ const FirstTable = ({
             },
           }
         );
+        // return;
+
+        const errorTest = "C.GPA > 4";
+
+        errors["gradePoints"] = errorTest;
+        errors["creditsAttempted"] = errorTest;
+      }
+
+      if (Object.keys(errors).length > 0) {
+        setValidationErrors(errors);
         return;
       }
 

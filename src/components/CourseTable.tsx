@@ -455,6 +455,31 @@ const validate = ({
   isRepeat: boolean;
 }) => {
   const errors: Record<string, string> = {};
+
+  // check if any of the required fields are empty
+
+  if (!values.code) {
+    errors["code"] = "Course code is required";
+  }
+
+  if (!values.credit) {
+    errors["credit"] = "Credit is required";
+  }
+
+  if (isRepeat) {
+    if (!values.oldGrade) {
+      errors["oldGrade"] = "Old grade is required";
+    }
+
+    if (!values.newGrade) {
+      errors["newGrade"] = "New grade is required";
+    }
+  } else {
+    if (!values.grade) {
+      errors["grade"] = "Grade is required";
+    }
+  }
+
   if (values.code.length !== 8) {
     errors["code"] = "Course code must be exactly 8 characters";
   }
