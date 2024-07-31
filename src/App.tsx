@@ -123,21 +123,6 @@ export default function GpaCalculatorMain() {
 
   const handleUpdateCourse = (course: GpaNewCourse | GpaRepeatCourse) => {
     if ("oldGrade" in course) {
-      if (
-        findCourse(gpaNewCourses, course.code) ||
-        gpaRepeatCourses.some(
-          (c) => c.code === course.code && c.id !== course.id
-        )
-      ) {
-        enqueueSnackbar(
-          "Course already exists in the new course list or another repeat course",
-          {
-            variant: "error",
-          }
-        );
-        return;
-      }
-
       const { semPoints, points } = calculateSemPointsAndPoints(course);
       course.points = points;
       course.semPoints = semPoints;
@@ -146,19 +131,6 @@ export default function GpaCalculatorMain() {
         prevCourses.map((c) => (c.id === course.id ? course : c))
       );
     } else {
-      if (
-        findCourse(gpaRepeatCourses, course.code) ||
-        gpaNewCourses.some((c) => c.code === course.code && c.id !== course.id)
-      ) {
-        enqueueSnackbar(
-          "Course already exists in the repeat course list or another new course",
-          {
-            variant: "error",
-          }
-        );
-        return;
-      }
-
       const semPoints = calculateSemPoints(course);
       course.semPoints = semPoints;
 
@@ -248,6 +220,7 @@ export default function GpaCalculatorMain() {
           <CourseTable
             isRepeat={true}
             data={gpaRepeatCourses}
+            otherDataCodes={gpaNewCourses.map((c) => c.code)}
             semGpa={gpaRecord.semGpaRepeat}
             gradeLabels={gradeLabels}
             updateAction={handleUpdateCourse}
@@ -269,6 +242,7 @@ export default function GpaCalculatorMain() {
           <CourseTable
             isRepeat={false}
             data={gpaNewCourses}
+            otherDataCodes={gpaRepeatCourses.map((c) => c.code)}
             semGpa={gpaRecord.semGpaNew}
             gradeLabels={gradeLabels}
             updateAction={handleUpdateCourse}

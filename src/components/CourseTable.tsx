@@ -31,6 +31,7 @@ function isRepeatCourse(
 interface RepeatTableProps {
   isRepeat: boolean;
   data: GpaRepeatCourse[] | GpaNewCourse[];
+  otherDataCodes: string[];
   semGpa: number;
   gradeLabels: GradeValueLabel[];
   updateAction: (course: GpaNewCourse | GpaRepeatCourse) => void;
@@ -52,6 +53,7 @@ interface TableRow {
 const CourseTable = ({
   isRepeat,
   data,
+  otherDataCodes,
   semGpa,
   gradeLabels,
   updateAction,
@@ -239,6 +241,10 @@ const CourseTable = ({
         method: "handleSave",
         isRepeat,
       });
+
+      if (otherDataCodes.includes(values.code)) {
+        errors["code"] = "Course code already exists in the other table";
+      }
 
       if (Object.keys(errors).length > 0) {
         setValidationErrors(errors);
