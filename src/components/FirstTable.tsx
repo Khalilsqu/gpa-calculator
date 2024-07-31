@@ -6,9 +6,10 @@ import {
   DialogTitle,
   IconButton,
   Tooltip,
-  Box, // Import Box from MUI
+  Box,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
+
 import {
   type MRT_ColumnDef,
   type MRT_TableOptions,
@@ -19,7 +20,7 @@ import {
 import { useSnackbar } from "notistack";
 import { useTheme } from "@mui/material/styles";
 
-interface TableRow {
+export interface TableRow {
   index: string;
   gradePoints: number;
   creditsAttempted: number;
@@ -27,6 +28,8 @@ interface TableRow {
 }
 
 import type { GpaRecord } from "App";
+
+import HeaderWithTooltip from "components/CustomHeader";
 
 const FirstTable = ({
   gpaRecord,
@@ -73,6 +76,17 @@ const FirstTable = ({
       {
         accessorKey: "gradePoints",
         header: "Grade Points",
+        Header: (props) => (
+          <HeaderWithTooltip
+            {...props.column}
+            title={
+              <p>
+                Can be found at the end of your academic transcript next to
+                <strong style={{ color: "blue" }}> TOTAL GRADE POINTS</strong>
+              </p>
+            }
+          />
+        ),
         muiEditTextFieldProps: {
           type: "number",
           inputProps: { min: 0, step: 0.01 },
@@ -89,6 +103,20 @@ const FirstTable = ({
       {
         accessorKey: "creditsAttempted",
         header: "Credits Attempted",
+        Header: (props) => (
+          <HeaderWithTooltip
+            {...props.column}
+            title={
+              <p>
+                Can be found at the end of your academic transcript next to
+                <strong style={{ color: "blue" }}>
+                  {" "}
+                  TOTAL CREDITS ATTEMPTED
+                </strong>
+              </p>
+            }
+          />
+        ),
         muiEditTextFieldProps: {
           type: "number",
           inputProps: { min: 0, step: 1 },

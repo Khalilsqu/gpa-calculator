@@ -11,7 +11,7 @@ import {
   willExceedMaxCGPA,
 } from "helpers";
 import DeleteDialogTable from "components/DeleteDialogTable";
-import Gpa4Error from "Gpa4Error";
+import Gpa4Error from "components/Gpa4Error";
 
 export interface GpaRecord {
   semGpaRepeat: number;

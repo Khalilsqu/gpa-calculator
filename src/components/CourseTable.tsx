@@ -170,7 +170,7 @@ const CourseTable = ({
         header: "Credit",
         muiEditTextFieldProps: {
           type: "number",
-          inputProps: { min: 1, max: 9, step: 1 },
+          inputProps: { min: 1, max: 9, step: 1, autoComplete: "off" },
           required: true,
           placeholder: "1 to 9",
           error: !!validationErrors["credit"],
@@ -498,8 +498,8 @@ const validate = ({
       "Course code must be 4 capital letters followed by 4 numbers";
   }
 
-  if (values.credit < 0 || values.credit > 9) {
-    errors["credit"] = "Credit cannot be less than 0 or more than 9";
+  if (values.credit < 1 || values.credit > 9) {
+    errors["credit"] = "Credit cannot be less than 1 or more than 9";
   }
 
   const grades = [
