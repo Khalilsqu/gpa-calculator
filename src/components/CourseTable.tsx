@@ -8,6 +8,7 @@ import {
   DialogTitle,
   IconButton,
   Tooltip,
+  Typography,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -188,6 +189,7 @@ const CourseTable = ({
               enableEditing: false,
               size: 80,
               Edit: () => null,
+              Cell: renderNumberCell,
             },
           ]
         : []),
@@ -196,7 +198,9 @@ const CourseTable = ({
         header: "Semester Points",
         enableEditing: false,
         size: 80,
+        type: "number",
         Edit: () => null,
+        Cell: renderNumberCell,
       },
     ],
     [validationErrors, gradeLabels, isRepeat]
@@ -529,3 +533,21 @@ const validate = ({
 
   return errors;
 };
+
+interface CellProps {
+  renderedCellValue:
+    | number
+    | string
+    | boolean
+    | React.ReactNode
+    | null
+    | undefined;
+}
+
+const renderNumberCell = ({ renderedCellValue }: CellProps) => (
+  <Typography variant="body2">
+    {typeof renderedCellValue === "number"
+      ? renderedCellValue.toFixed(2)
+      : "N/A"}
+  </Typography>
+);
