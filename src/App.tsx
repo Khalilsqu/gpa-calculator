@@ -109,6 +109,10 @@ export default function GpaCalculatorMain() {
       return acc + course.semPoints;
     }, 0);
 
+    const sumPointsRepeat = gpaRepeatCourses.reduce((acc, course) => {
+      return acc + course.points;
+    }, 0);
+
     const sumCreditsRepeat = gpaRepeatCourses.reduce((acc, course) => {
       const credit = Number(course.credit);
       return acc + credit;
@@ -126,6 +130,7 @@ export default function GpaCalculatorMain() {
     const semGpaRepeat = sumCreditsRepeat
       ? sumSemPointsRepeat / sumCreditsRepeat
       : 0;
+
     const semGpaNew = sumCreditsNew ? sumSemPointsNew / sumCreditsNew : 0;
 
     const totalSemPoints = sumSemPointsRepeat + sumSemPointsNew;
@@ -134,12 +139,18 @@ export default function GpaCalculatorMain() {
     const overallSemGpa = totalCredits ? totalSemPoints / totalCredits : 0;
 
     const expectedGradePoints =
-      sumSemPointsRepeat + sumSemPointsNew + gpaRecord.currentGradePoints;
+      sumPointsRepeat + sumSemPointsNew + gpaRecord.currentGradePoints;
     const expectedAttemptedCredits =
       sumCreditsNew + gpaRecord.currentAttemptedCredits;
-    const expectedCGPA = expectedAttemptedCredits
+
+    let expectedCGPA = expectedAttemptedCredits
       ? (expectedGradePoints / expectedAttemptedCredits).toFixed(2)
       : "0.00";
+
+    if (isNaN(parseFloat(expectedCGPA))) {
+      // expected attemepted credits is 0
+      expectedCGPA = "0.00";
+    }
 
     setGpaRecord((prevRecord) => ({
       ...prevRecord,

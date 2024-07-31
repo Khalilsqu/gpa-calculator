@@ -175,6 +175,11 @@ const FirstTable = ({
 
       const expectedCGPA = expectedGradePoints / expectedAttemptedCredits;
 
+      if (isNaN(expectedCGPA)) {
+        // attempted credits is 0
+        cgpa = 0;
+      }
+
       const updatedRecord = {
         ...gpaRecord,
         currentGradePoints: Number(updatedData[0].gradePoints),
