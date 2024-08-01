@@ -488,7 +488,6 @@ const CourseTable = ({
     muiTablePaperProps: {
       elevation: 0,
       sx: {
-        overflowX: { xs: "scroll", sm: "auto" },
         borderRadius: "5px",
         border: `1px dotted ${
           theme.palette.mode === "dark" ? "#444242" : "#b3c0b3"

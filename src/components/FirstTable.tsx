@@ -29,7 +29,7 @@ export interface TableRow {
 
 import type { GpaRecord } from "App";
 
-import HeaderWithTooltip from "components/CustomHeader";
+import CellRenderer from "components/CellRenderer";
 
 const FirstTable = ({
   gpaRecord,
@@ -76,17 +76,21 @@ const FirstTable = ({
       {
         accessorKey: "gradePoints",
         header: "Grade Points",
-        Header: (props) => (
-          <HeaderWithTooltip
-            {...props.column}
+        Cell: (props) => (
+          <CellRenderer
+            {...props}
             title={
               <p>
-                Can be found at the end of your academic transcript next to
-                <strong style={{ color: "blue" }}> TOTAL GRADE POINTS</strong>
+                Can be found at the end of the academic transcript next to
+                <strong style={{ color: "blue", fontStyle: "italic" }}>
+                  {" "}
+                  TOTAL GRADE POINTS
+                </strong>
               </p>
             }
           />
         ),
+
         muiEditTextFieldProps: {
           type: "number",
           inputProps: { min: 0, step: 0.01 },
@@ -99,17 +103,23 @@ const FirstTable = ({
               gradePoints: undefined,
             })),
         },
+        width: "80px",
       },
       {
         accessorKey: "creditsAttempted",
         header: "Credits Attempted",
-        Header: (props) => (
-          <HeaderWithTooltip
-            {...props.column}
+        Cell: (props) => (
+          <CellRenderer
+            {...props}
             title={
               <p>
-                Can be found at the end of your academic transcript next to
-                <strong style={{ color: "blue" }}>
+                Can be found at the end of the academic transcript next to
+                <strong
+                  style={{
+                    color: "blue",
+                    fontStyle: "italic",
+                  }}
+                >
                   {" "}
                   TOTAL CREDITS ATTEMPTED
                 </strong>
@@ -275,7 +285,7 @@ const FirstTable = ({
       return (
         <Tooltip title="Edit">
           <IconButton onClick={() => table.setEditingRow(row)} size="small">
-            <EditIcon />
+            <EditIcon fontSize="small" />
           </IconButton>
         </Tooltip>
       );
@@ -298,7 +308,6 @@ const FirstTable = ({
     muiTablePaperProps: {
       elevation: 0, //change the mui box shadow
       sx: {
-        overflowX: { xs: "scroll", sm: "auto" },
         borderRadius: "5px",
         border: `1px solid ${
           theme.palette.mode === "dark" ? "#444242" : "#b3c0b3"
