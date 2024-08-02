@@ -243,6 +243,14 @@ const FirstTable = ({
       setGpaRecord(updatedRecord);
 
       table.setEditingRow(null);
+
+      enqueueSnackbar("Update is successful", {
+        variant: "success",
+        anchorOrigin: {
+          vertical: "bottom",
+          horizontal: "right",
+        },
+      });
     };
 
   const table = useMaterialReactTable({

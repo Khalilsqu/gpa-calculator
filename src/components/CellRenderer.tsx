@@ -2,7 +2,11 @@ import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
 import InfoIcon from "@mui/icons-material/Info";
 import { Typography, useMediaQuery } from "@mui/material";
-import { type MRT_Cell, type MRT_Row } from "material-react-table";
+import {
+  type MRT_Cell,
+  type MRT_Row,
+  type MRT_Column,
+} from "material-react-table";
 // import CircularTimer from "./CircularTimer"; // Import the CircularTimer component
 import { useEffect, useState } from "react";
 
@@ -12,9 +16,23 @@ interface CellRendererProps {
   cell: MRT_Cell<TableRow, unknown>;
   row: MRT_Row<TableRow>;
   title: React.ReactNode;
+  renderedCellValue:
+    | number
+    | string
+    | boolean
+    | React.ReactNode
+    | null
+    | undefined;
+  column: MRT_Column<TableRow, unknown>;
 }
 
-const CellRenderer = ({ cell, row, title }: CellRendererProps) => {
+const CellRenderer = ({
+  cell,
+  row,
+  title,
+  renderedCellValue,
+  column,
+}: CellRendererProps) => {
   const cellValue = cell.getValue<number>();
   const tooltipDuration = 6000;
 
@@ -58,7 +76,13 @@ const CellRenderer = ({ cell, row, title }: CellRendererProps) => {
       </div>
     </div>
   ) : (
-    <span>{cellValue}</span>
+    <span>
+      {typeof renderedCellValue === "number"
+        ? column.id === "gradePoints" && row.index === 1
+          ? renderedCellValue.toFixed(2)
+          : renderedCellValue
+        : "N/A"}
+    </span>
   );
 };
 

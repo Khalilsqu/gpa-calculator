@@ -170,7 +170,6 @@ export default function App() {
         prevCourses.map((c) => (c.id === course.id ? course : c))
       );
     }
-    calculateGpaValues();
   };
 
   const handleAddCourse = (course: GpaNewCourse | GpaRepeatCourse) => {
@@ -186,7 +185,6 @@ export default function App() {
 
       setGpaNewCourses((prevCourses) => [...prevCourses, course]);
     }
-    calculateGpaValues();
   };
 
   const handleDeleteCourse = (id: string, isRepeat: boolean) => {
@@ -198,7 +196,6 @@ export default function App() {
       setGpaNewCourses((prevCourses) => prevCourses.filter((c) => c.id !== id));
     }
     enqueueSnackbar("Course deleted successfully", { variant: "success" });
-    calculateGpaValues();
   };
 
   const openDeleteConfirmModal = (id: string, isRepeat: boolean) => {

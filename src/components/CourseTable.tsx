@@ -8,7 +8,6 @@ import {
   DialogTitle,
   IconButton,
   Tooltip,
-  Typography,
   useMediaQuery,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
@@ -24,6 +23,7 @@ import { useSnackbar, closeSnackbar } from "notistack";
 import type { GpaNewCourse, GpaRepeatCourse, GpaRecord } from "App";
 import type { GradeValueLabel } from "constants/gradeValueLabel";
 import { willExceedMaxCGPA } from "helpers";
+import { renderNumberCell } from "components/renderNumberCell";
 
 function isRepeatCourse(
   course: GpaNewCourse | GpaRepeatCourse
@@ -277,6 +277,10 @@ const CourseTable = ({
       }
       addAction(newCourse as GpaRepeatCourse | GpaNewCourse);
 
+      enqueueSnackbar(`Course ${newCourse.code} added successfully`, {
+        variant: "success",
+      });
+
       table.setCreatingRow(null);
     };
 
@@ -370,6 +374,10 @@ const CourseTable = ({
         };
         updateAction(newRecord as GpaNewCourse);
       }
+
+      enqueueSnackbar(`Course ${row.original.code} updated successfully`, {
+        variant: "success",
+      });
 
       table.setEditingRow(null);
     };
@@ -602,21 +610,3 @@ const validate = ({
 
   return errors;
 };
-
-interface CellProps {
-  renderedCellValue:
-    | number
-    | string
-    | boolean
-    | React.ReactNode
-    | null
-    | undefined;
-}
-
-const renderNumberCell = ({ renderedCellValue }: CellProps) => (
-  <Typography variant="body2">
-    {typeof renderedCellValue === "number"
-      ? renderedCellValue.toFixed(2)
-      : "N/A"}
-  </Typography>
-);
