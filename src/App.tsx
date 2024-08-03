@@ -13,6 +13,7 @@ import {
   DialogContentText,
   DialogTitle,
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import { useSnackbar, closeSnackbar } from "notistack";
 import { gradeValueLabel as gradeLabels } from "constants/gradeValueLabel";
 import { calculateSemPointsAndPoints, calculateSemPoints } from "helpers";
@@ -50,6 +51,7 @@ export interface GpaNewCourse {
 
 export default function App() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const theme = useTheme();
 
   const initialGpaRecord = {
     semGpaRepeat: Number(searchParams.get("semGpaRepeat")) || 0,
@@ -304,28 +306,38 @@ export default function App() {
           overflowX: "hidden",
         }}
       >
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            position: "relative",
-            marginBottom: "2rem",
-          }}
-        >
-          <Typography
-            variant="h5"
+        {hasChanges ? (
+          <Box
             sx={{
-              position: "absolute",
-              left: "50%",
-              transform: "translateX(-50%)",
-              margin: "2rem 0",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              position: "relative",
+              marginBottom: "2rem",
             }}
           >
-            GPA Calculator - Probation students
-          </Typography>
-          <Box sx={{ flexGrow: 1 }} />
-          {hasChanges && (
+            <Typography
+              variant="h5"
+              sx={{
+                margin: "2rem 0",
+                maxWidth: "65vw", // Adjust max width for mobile
+                fontSize: { xs: "1rem", sm: "1.5rem" }, // Responsive font size
+                [theme.breakpoints.up("sm")]: {
+                  position: "absolute",
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  overflow: "hidden",
+                },
+              }}
+            >
+              GPA Calculator - Probation students
+            </Typography>
+            <Box
+              sx={{
+                flexGrow: 1,
+                [theme.breakpoints.up("sm")]: { display: "block" },
+              }}
+            />
             <Button
               variant="contained"
               color="secondary"
@@ -334,8 +346,20 @@ export default function App() {
             >
               Reset
             </Button>
-          )}
-        </Box>
+          </Box>
+        ) : (
+          <Typography
+            variant="h5"
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              marginBottom: "2rem",
+              fontSize: { xs: "1.2rem", sm: "1.5rem" },
+            }}
+          >
+            GPA Calculator - Probation students
+          </Typography>
+        )}
         <Box sx={{ overflowX: "auto", width: "100%" }}>
           <FirstTable
             gpaRecord={gpaRecord}
