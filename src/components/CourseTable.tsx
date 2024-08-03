@@ -277,10 +277,6 @@ const CourseTable = ({
       }
       addAction(newCourse as GpaRepeatCourse | GpaNewCourse);
 
-      enqueueSnackbar(`Course ${newCourse.code} added successfully`, {
-        variant: "success",
-      });
-
       table.setCreatingRow(null);
     };
 
@@ -374,10 +370,6 @@ const CourseTable = ({
         };
         updateAction(newRecord as GpaNewCourse);
       }
-
-      enqueueSnackbar(`Course ${row.original.code} updated successfully`, {
-        variant: "success",
-      });
 
       table.setEditingRow(null);
     };

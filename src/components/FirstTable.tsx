@@ -34,9 +34,15 @@ import CellRenderer from "components/CellRenderer";
 const FirstTable = ({
   gpaRecord,
   setGpaRecord,
+  repeatCredits,
+  newCredits,
+  setHasChanges,
 }: {
   gpaRecord: GpaRecord;
   setGpaRecord: (record: GpaRecord) => void;
+  repeatCredits: number;
+  newCredits: number;
+  setHasChanges: (hasChanges: boolean) => void;
 }) => {
   const { enqueueSnackbar } = useSnackbar();
 
@@ -162,7 +168,11 @@ const FirstTable = ({
                 {cellValue} 👍
               </span>
             );
-          } else if (row.index === 1 && cellValue < 2.0) {
+          } else if (
+            row.index === 1 &&
+            cellValue < 2.0 &&
+            repeatCredits + newCredits > 0
+          ) {
             return (
               <>
                 <span
@@ -289,6 +299,8 @@ const FirstTable = ({
           horizontal: "right",
         },
       });
+
+      setHasChanges(true);
     };
 
   const table = useMaterialReactTable({
@@ -336,21 +348,59 @@ const FirstTable = ({
         </Tooltip>
       );
     },
-    renderBottomToolbarCustomActions: () => (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "flex-end",
-          gap: "1rem",
-          alignItems: "center",
-          width: "100%",
-        }}
-      >
-        <Box>
-          <b>Overall Semester GPA:</b> {gpaRecord.overallSemGpa.toFixed(2)}
+    renderBottomToolbarCustomActions: () => {
+      const totalCredits = repeatCredits + newCredits;
+      let text: JSX.Element | string = "";
+
+      const style = {
+        color: "blue",
+        background: "yellow",
+        padding: "5px",
+        borderRadius: "5px",
+      };
+
+      if (totalCredits > 12) {
+        text = (
+          <>
+            Exceeded maximum allowed credits by{" "}
+            <span style={style}>{totalCredits - 12}</span>
+          </>
+        );
+      } else if (totalCredits < 9 && totalCredits > 0) {
+        text = (
+          <>
+            Register for <span style={style}>{9 - totalCredits}</span> more
+            credits to meet the minimum of{" "}
+            <span style={{ color: "red" }}>9</span>
+          </>
+        );
+      } else if (totalCredits >= 9 && totalCredits < 12) {
+        text = (
+          <>
+            You can register for <span style={style}>{12 - totalCredits}</span>{" "}
+            more credits
+          </>
+        );
+      }
+
+      return (
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: "1rem",
+            alignItems: "center",
+            width: "100%",
+          }}
+        >
+          <Box>{text}</Box>
+          <Box>
+            <b>Overall Semester GPA:</b> {gpaRecord.overallSemGpa.toFixed(2)}
+          </Box>
         </Box>
-      </Box>
-    ),
+      );
+    },
+
     muiTablePaperProps: {
       elevation: 0, //change the mui box shadow
       sx: {

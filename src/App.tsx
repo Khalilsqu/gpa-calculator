@@ -2,8 +2,18 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import FirstTable from "components/FirstTable";
 import CourseTable from "components/CourseTable";
-import { Typography, Divider, Box } from "@mui/material";
-import { useSnackbar } from "notistack";
+import {
+  Typography,
+  Divider,
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+} from "@mui/material";
+import { useSnackbar, closeSnackbar } from "notistack";
 import { gradeValueLabel as gradeLabels } from "constants/gradeValueLabel";
 import { calculateSemPointsAndPoints, calculateSemPoints } from "helpers";
 import DeleteDialogTable from "components/DeleteDialogTable";
@@ -72,6 +82,10 @@ export default function App() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
   const [deleteRecordID, setDeleteRecordID] = useState<string>("");
   const [isRepeat, setIsRepeat] = useState<boolean>(true);
+
+  const [resetDialogOpen, setResetDialogOpen] = useState<boolean>(false);
+
+  const [hasChanges, setHasChanges] = useState<boolean>(false);
 
   const { enqueueSnackbar } = useSnackbar();
 
@@ -155,6 +169,33 @@ export default function App() {
 
   const handleUpdateCourse = (course: GpaNewCourse | GpaRepeatCourse) => {
     if ("oldGrade" in course) {
+      // do not allow updating a repeat course if the ((current credits attempted - credits of the courses in the repeat table) - credits of the course being updated) < 0
+
+      const sumCreditsRepeat = gpaRepeatCourses.reduce((acc, course) => {
+        const credit = Number(course.credit);
+        return acc + credit;
+      }, 0);
+
+      const currentAttemptedCredits = Number(gpaRecord.currentAttemptedCredits);
+
+      if (
+        currentAttemptedCredits - sumCreditsRepeat - Number(course.credit) <
+        0
+      ) {
+        enqueueSnackbar(
+          "Cannot edit a repating course when no equivalent current attempted credits are available",
+          {
+            variant: "error",
+            autoHideDuration: 10000,
+            SnackbarProps: {
+              onClick: () => {
+                closeSnackbar();
+              },
+            },
+          }
+        );
+        return;
+      }
       const { semPoints, points } = calculateSemPointsAndPoints(course);
       course.points = points;
       course.semPoints = semPoints;
@@ -170,10 +211,44 @@ export default function App() {
         prevCourses.map((c) => (c.id === course.id ? course : c))
       );
     }
+
+    setHasChanges(true);
+
+    enqueueSnackbar(`Course ${course.code} updated successfully`, {
+      variant: "success",
+    });
   };
 
   const handleAddCourse = (course: GpaNewCourse | GpaRepeatCourse) => {
     if ("oldGrade" in course) {
+      // do not allow adding a repeat course if the ((current credits attempted - credits of the courses in the repeat table) - credits of the course being added) < 0
+
+      const sumCreditsRepeat = gpaRepeatCourses.reduce((acc, course) => {
+        const credit = Number(course.credit);
+        return acc + credit;
+      }, 0);
+
+      const currentAttemptedCredits = Number(gpaRecord.currentAttemptedCredits);
+
+      if (
+        currentAttemptedCredits - sumCreditsRepeat - Number(course.credit) <
+        0
+      ) {
+        enqueueSnackbar(
+          "Cannot add a repating course when no equivalent current attempted credits are available",
+          {
+            variant: "error",
+            autoHideDuration: 10000,
+            SnackbarProps: {
+              onClick: () => {
+                closeSnackbar();
+              },
+            },
+          }
+        );
+        return;
+      }
+
       const { semPoints, points } = calculateSemPointsAndPoints(course);
       course.points = points;
       course.semPoints = semPoints;
@@ -185,6 +260,12 @@ export default function App() {
 
       setGpaNewCourses((prevCourses) => [...prevCourses, course]);
     }
+
+    setHasChanges(true);
+
+    enqueueSnackbar(`Course ${course.code} added successfully`, {
+      variant: "success",
+    });
   };
 
   const handleDeleteCourse = (id: string, isRepeat: boolean) => {
@@ -196,12 +277,47 @@ export default function App() {
       setGpaNewCourses((prevCourses) => prevCourses.filter((c) => c.id !== id));
     }
     enqueueSnackbar("Course deleted successfully", { variant: "success" });
+    setHasChanges(true);
   };
 
   const openDeleteConfirmModal = (id: string, isRepeat: boolean) => {
     setDeleteRecordID(id);
     setDeleteDialogOpen(true);
     setIsRepeat(isRepeat);
+  };
+
+  const handleReset = () => {
+    const newGpaRecord = {
+      semGpaRepeat: 0,
+      semGpaNew: 0,
+      currentGradePoints: 0,
+      currentAttemptedCredits: 0,
+      currentCGPA: 0,
+      expectedGradePoints: 0,
+      expectedAttemptedCredits: 0,
+      expectedCGPA: 0,
+      overallSemGpa: 0,
+    };
+    setGpaRecord(newGpaRecord);
+    setGpaRepeatCourses([]);
+    setGpaNewCourses([]);
+
+    const initialParams = {
+      ...Object.keys(newGpaRecord).reduce(
+        (acc: Record<string, string>, key) => {
+          acc[key] = newGpaRecord[key as keyof GpaRecord].toString();
+          return acc;
+        },
+        {}
+      ),
+      gpaRepeatCourses: JSON.stringify([]),
+      gpaNewCourses: JSON.stringify([]),
+    };
+
+    setSearchParams(initialParams);
+    enqueueSnackbar("All data has been reset", { variant: "success" });
+    setResetDialogOpen(false);
+    setHasChanges(false);
   };
 
   return (
@@ -215,11 +331,50 @@ export default function App() {
           overflowX: "hidden",
         }}
       >
-        <Box sx={{ overflowX: "auto", width: "100%" }}>
-          <Typography variant="h5" align="center" sx={{ margin: "2rem 0" }}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            position: "relative",
+            marginBottom: "2rem",
+          }}
+        >
+          <Typography
+            variant="h5"
+            sx={{
+              position: "absolute",
+              left: "50%",
+              transform: "translateX(-50%)",
+              margin: "2rem 0",
+            }}
+          >
             GPA Calculator - Probation students
           </Typography>
-          <FirstTable gpaRecord={gpaRecord} setGpaRecord={setGpaRecord} />
+          <Box sx={{ flexGrow: 1 }} />
+          {hasChanges && (
+            <Button
+              variant="contained"
+              color="secondary"
+              onClick={() => setResetDialogOpen(true)}
+              style={{ textTransform: "none" }}
+            >
+              Reset
+            </Button>
+          )}
+        </Box>
+        <Box sx={{ overflowX: "auto", width: "100%" }}>
+          <FirstTable
+            gpaRecord={gpaRecord}
+            setGpaRecord={setGpaRecord}
+            repeatCredits={gpaRepeatCourses.reduce((acc, course) => {
+              return acc + Number(course.credit);
+            }, 0)}
+            newCredits={gpaNewCourses.reduce((acc, course) => {
+              return acc + Number(course.credit);
+            }, 0)}
+            setHasChanges={setHasChanges}
+          />
           <Divider
             textAlign="center"
             sx={{
@@ -275,6 +430,21 @@ export default function App() {
         deleteAction={handleDeleteCourse}
         isRepeat={isRepeat}
       />
+      <Dialog open={resetDialogOpen} onClose={() => setResetDialogOpen(false)}>
+        <DialogTitle>Reset All Data</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Repeat and new courses will be deleted. GPA records will be set to
+            0. Are you sure you want to reset all data?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setResetDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleReset} color="primary">
+            Reset
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
