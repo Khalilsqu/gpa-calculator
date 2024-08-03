@@ -169,33 +169,6 @@ export default function App() {
 
   const handleUpdateCourse = (course: GpaNewCourse | GpaRepeatCourse) => {
     if ("oldGrade" in course) {
-      // do not allow updating a repeat course if the ((current credits attempted - credits of the courses in the repeat table) - credits of the course being updated) < 0
-
-      const sumCreditsRepeat = gpaRepeatCourses.reduce((acc, course) => {
-        const credit = Number(course.credit);
-        return acc + credit;
-      }, 0);
-
-      const currentAttemptedCredits = Number(gpaRecord.currentAttemptedCredits);
-
-      if (
-        currentAttemptedCredits - sumCreditsRepeat - Number(course.credit) <
-        0
-      ) {
-        enqueueSnackbar(
-          "Cannot edit a repating course when no equivalent current attempted credits are available",
-          {
-            variant: "error",
-            autoHideDuration: 10000,
-            SnackbarProps: {
-              onClick: () => {
-                closeSnackbar();
-              },
-            },
-          }
-        );
-        return;
-      }
       const { semPoints, points } = calculateSemPointsAndPoints(course);
       course.points = points;
       course.semPoints = semPoints;
@@ -231,11 +204,11 @@ export default function App() {
       const currentAttemptedCredits = Number(gpaRecord.currentAttemptedCredits);
 
       if (
-        currentAttemptedCredits - sumCreditsRepeat - Number(course.credit) <
+        currentAttemptedCredits - (sumCreditsRepeat + Number(course.credit)) <
         0
       ) {
         enqueueSnackbar(
-          "Cannot add a repating course when no equivalent current attempted credits are available",
+          `Sum of credits of repeat courses and the course being added exceeds the current attempted credits (${currentAttemptedCredits})`,
           {
             variant: "error",
             autoHideDuration: 10000,

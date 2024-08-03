@@ -303,6 +303,39 @@ const CourseTable = ({
         }
       }
 
+      const sumCreditsRepeat = repeatData.reduce((acc, course) => {
+        const credit = Number(course.credit);
+        return acc + credit;
+      }, 0);
+
+      const currentAttemptedCredits = Number(gpaRecord.currentAttemptedCredits);
+
+      const findOldCourse = repeatData.find(
+        (c) => c.id === row.original.id
+      ) as GpaRepeatCourse;
+
+      if (
+        currentAttemptedCredits -
+          (sumCreditsRepeat +
+            Number(values.credit) -
+            Number(findOldCourse.credit)) <
+        0
+      ) {
+        enqueueSnackbar(
+          `sum of credits in repeating courses cannot exceed the total attempted credits (${currentAttemptedCredits})`,
+          {
+            variant: "error",
+            autoHideDuration: 10000,
+            SnackbarProps: {
+              onClick: () => {
+                closeSnackbar();
+              },
+            },
+          }
+        );
+        return;
+      }
+
       if (Object.keys(errors).length > 0) {
         setValidationErrors(errors);
         return;

@@ -78,6 +78,10 @@ export const willExceedMaxCGPA = (
   const allPoints = sumOldPointsRepeat + sumOldSemPointsNew + newPoints;
   const allCredits = sumOldCreditsNew + newCredits;
 
+  if (allCredits === 0) {
+    return false;
+  }
+
   const newCGPA = allPoints / allCredits;
 
   return newCGPA > 4;
