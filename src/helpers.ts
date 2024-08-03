@@ -27,34 +27,36 @@ export const willExceedMaxCGPA = (
   gpaNewCourses: GpaNewCourse[],
   isUpdate: boolean = false
 ): boolean => {
-  let expectedGradePoints = Number(gpaRecord.currentGradePoints);
-  let expectedAttemptedCredits = Number(gpaRecord.currentAttemptedCredits);
+  const sumOldPointsRepeat = gpaRepeatCourses.reduce((acc, course) => {
+    return acc + course.points;
+  }, 0);
 
-  gpaRepeatCourses.forEach((course) => {
-    const { semPoints } = calculateSemPointsAndPoints(course);
-    expectedGradePoints += Number(semPoints);
-    // Do not add course credit to expectedAttemptedCredits
-  });
+  const sumOldSemPointsNew = gpaNewCourses.reduce((acc, course) => {
+    return acc + course.semPoints;
+  }, 0);
 
-  gpaNewCourses.forEach((course) => {
-    const semPoints = calculateSemPoints(course);
-    expectedGradePoints += Number(semPoints);
-    expectedAttemptedCredits += Number(course.credit);
-  });
+  const sumOldCreditsNew = gpaNewCourses.reduce((acc, course) => {
+    const credit = Number(course.credit);
+    return acc + credit;
+  }, 0);
+
+  let newPoints = Number(gpaRecord.currentGradePoints);
+  let newCredits = Number(gpaRecord.currentAttemptedCredits);
 
   if ("oldGrade" in newCourse) {
-    const { semPoints } = calculateSemPointsAndPoints(newCourse);
+    const { points } = calculateSemPointsAndPoints(newCourse);
+
     if (isUpdate) {
       const oldCourse = gpaRepeatCourses.find(
         (course) => course.id === newCourse.id
       );
       if (oldCourse) {
-        expectedGradePoints -= Number(oldCourse.semPoints);
-        // Do not subtract course credit from expectedAttemptedCredits
+        newPoints -= oldCourse.points;
+        newPoints += points;
       }
+    } else {
+      newPoints += points;
     }
-    expectedGradePoints += Number(semPoints);
-    // Do not add course credit to expectedAttemptedCredits
   } else {
     const semPoints = calculateSemPoints(newCourse);
     if (isUpdate) {
@@ -62,17 +64,21 @@ export const willExceedMaxCGPA = (
         (course) => course.id === newCourse.id
       );
       if (oldCourse) {
-        expectedGradePoints -= Number(oldCourse.semPoints);
-        expectedAttemptedCredits -= Number(oldCourse.credit);
+        newPoints -= oldCourse.semPoints;
+        newCredits -= Number(oldCourse.credit);
+        newPoints += semPoints;
+        newCredits += Number(newCourse.credit);
       }
+    } else {
+      newPoints += semPoints;
+      newCredits += Number(newCourse.credit);
     }
-    expectedGradePoints += Number(semPoints);
-    expectedAttemptedCredits += Number(newCourse.credit);
   }
 
-  const expectedCGPA = expectedAttemptedCredits
-    ? expectedGradePoints / expectedAttemptedCredits
-    : 0;
+  const allPoints = sumOldPointsRepeat + sumOldSemPointsNew + newPoints;
+  const allCredits = sumOldCreditsNew + newCredits;
 
-  return expectedCGPA > 4.0;
+  const newCGPA = allPoints / allCredits;
+
+  return newCGPA > 4;
 };
