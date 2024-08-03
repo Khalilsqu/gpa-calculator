@@ -145,6 +145,44 @@ const FirstTable = ({
         header: "C.GPA",
         enableEditing: false,
         Edit: () => null, //  don't show on modal
+        Cell: ({ cell, row }) => {
+          const cellValue = cell.getValue<number>();
+          if (row.index === 1 && cellValue >= 2.0) {
+            return (
+              <span
+                style={{
+                  color: "green",
+                  fontWeight: "bold",
+                  fontSize: 16,
+                  backgroundColor: "yellow",
+                  padding: "5px",
+                  borderRadius: "5px",
+                }}
+              >
+                {cellValue} 👍
+              </span>
+            );
+          } else if (row.index === 1 && cellValue < 2.0) {
+            return (
+              <>
+                <span
+                  style={{
+                    color: "red",
+                    fontWeight: "bold",
+                    fontSize: 16,
+                    backgroundColor: "yellow",
+                    padding: "5px",
+                    borderRadius: "5px",
+                  }}
+                >
+                  {cellValue} 👎
+                </span>
+              </>
+            );
+          } else {
+            return <span>{cellValue}</span>;
+          }
+        },
       },
     ],
     [validationErrors]
