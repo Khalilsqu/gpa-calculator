@@ -320,7 +320,7 @@ const CourseTable = ({
             `sum of credits in repeating courses cannot exceed the total attempted credits (${currentAttemptedCredits})`,
             {
               variant: "error",
-              autoHideDuration: 10000,
+              autoHideDuration: 15000,
               SnackbarProps: {
                 onClick: () => {
                   closeSnackbar();

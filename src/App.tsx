@@ -213,7 +213,7 @@ export default function App() {
           `Sum of credits of repeat courses and the course being added exceeds the current attempted credits (${currentAttemptedCredits})`,
           {
             variant: "error",
-            autoHideDuration: 10000,
+            autoHideDuration: 15000,
             SnackbarProps: {
               onClick: () => {
                 closeSnackbar();
