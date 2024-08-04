@@ -12,6 +12,7 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  useMediaQuery,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { useSnackbar, closeSnackbar } from "notistack";
@@ -52,6 +53,7 @@ export interface GpaNewCourse {
 export default function App() {
   const [searchParams, setSearchParams] = useSearchParams();
   const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.up("sm"));
 
   const initialGpaRecord = {
     semGpaRepeat: Number(searchParams.get("semGpaRepeat")) || 0,
@@ -373,16 +375,29 @@ export default function App() {
             setHasChanges={setHasChanges}
           />
           <Divider
-            textAlign="center"
+            textAlign={isSmallScreen ? "center" : "left"}
             sx={{
               marginY: "2rem",
               paddingTop: "40px",
               fontFamily: "Arial, sans-serif",
               fontSize: "16px",
               color: "red",
+              "::before, ::after": {
+                borderWidth: { xs: "3px", sm: "5px" },
+              },
             }}
           >
-            Repeating Courses
+            <Typography
+              variant="body1"
+              sx={{
+                border: "1px dotted black",
+                padding: "5px",
+                borderRadius: "5px",
+                fontSize: { xs: "0.8rem", sm: "1rem" },
+              }}
+            >
+              Repeat Courses
+            </Typography>
           </Divider>
           <CourseTable
             isRepeat={true}
@@ -396,16 +411,30 @@ export default function App() {
             deleteAction={openDeleteConfirmModal}
           />
           <Divider
-            textAlign="center"
+            textAlign={isSmallScreen ? "center" : "left"}
             sx={{
               marginY: "2rem",
               paddingTop: "40px",
               fontFamily: "Arial, sans-serif",
               fontSize: "16px",
               color: "red",
+              "::before, ::after": {
+                borderWidth: { xs: "3px", sm: "5px" },
+              },
             }}
           >
-            New Courses
+            {/* New Courses */}
+            <Typography
+              variant="body1"
+              sx={{
+                border: "1px dotted black",
+                padding: "5px",
+                borderRadius: "5px",
+                fontSize: { xs: "0.8rem", sm: "1rem" },
+              }}
+            >
+              New Courses
+            </Typography>
           </Divider>
           <CourseTable
             isRepeat={false}
