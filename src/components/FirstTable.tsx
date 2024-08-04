@@ -195,7 +195,7 @@ const FirstTable = ({
         },
       },
     ],
-    [validationErrors]
+    [validationErrors, repeatCredits, newCredits]
   );
 
   const handleSaveUser: MRT_TableOptions<TableRow>["onEditingRowSave"] =
