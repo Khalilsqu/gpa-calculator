@@ -295,45 +295,47 @@ const CourseTable = ({
         if (otherDataCodes.includes(values.code)) {
           errors["code"] = "Course code already exists in the other table";
         }
+
+        const sumCreditsRepeat = repeatData.reduce((acc, course) => {
+          const credit = Number(course.credit);
+          return acc + credit;
+        }, 0);
+
+        const currentAttemptedCredits = Number(
+          gpaRecord.currentAttemptedCredits
+        );
+
+        const findOldCourse = repeatData.find(
+          (c) => c.id === row.original.id
+        ) as GpaRepeatCourse;
+
+        if (
+          currentAttemptedCredits -
+            (sumCreditsRepeat +
+              Number(values.credit) -
+              Number(findOldCourse.credit)) <
+          0
+        ) {
+          enqueueSnackbar(
+            `sum of credits in repeating courses cannot exceed the total attempted credits (${currentAttemptedCredits})`,
+            {
+              variant: "error",
+              autoHideDuration: 10000,
+              SnackbarProps: {
+                onClick: () => {
+                  closeSnackbar();
+                },
+              },
+            }
+          );
+          return;
+        }
       } else {
         const otherDataCodes = repeatData.map((course) => course.code);
 
         if (otherDataCodes.includes(values.code)) {
           errors["code"] = "Course code already exists in the other table";
         }
-      }
-
-      const sumCreditsRepeat = repeatData.reduce((acc, course) => {
-        const credit = Number(course.credit);
-        return acc + credit;
-      }, 0);
-
-      const currentAttemptedCredits = Number(gpaRecord.currentAttemptedCredits);
-
-      const findOldCourse = repeatData.find(
-        (c) => c.id === row.original.id
-      ) as GpaRepeatCourse;
-
-      if (
-        currentAttemptedCredits -
-          (sumCreditsRepeat +
-            Number(values.credit) -
-            Number(findOldCourse.credit)) <
-        0
-      ) {
-        enqueueSnackbar(
-          `sum of credits in repeating courses cannot exceed the total attempted credits (${currentAttemptedCredits})`,
-          {
-            variant: "error",
-            autoHideDuration: 10000,
-            SnackbarProps: {
-              onClick: () => {
-                closeSnackbar();
-              },
-            },
-          }
-        );
-        return;
       }
 
       if (Object.keys(errors).length > 0) {
@@ -561,7 +563,7 @@ const validate = ({
   method: string;
   isRepeat: boolean;
 }) => {
-  const errors: Record<string, string> = {};
+  const errors: Record<string, string | undefined> = {};
 
   // check if any of the required fields are empty
 
