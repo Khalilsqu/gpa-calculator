@@ -118,6 +118,23 @@ export default function App() {
   };
 
   const handleAddCourse = (course: GpaNewCourse | GpaRepeatCourse) => {
+    // prevent adding more than a total of 9 courses in both repeat and new courses
+
+    if (gpaRepeatCourses.length + gpaNewCourses.length >= 9) {
+      enqueueSnackbar(
+        "You have reached the maximum number of courses allowed (9)",
+        {
+          variant: "error",
+          autoHideDuration: 15000,
+          SnackbarProps: {
+            onClick: () => {
+              closeSnackbar();
+            },
+          },
+        }
+      );
+      return;
+    }
     if ("oldGrade" in course) {
       const sumCreditsRepeat = gpaRepeatCourses.reduce((acc, course) => {
         const credit = Number(course.credit);
