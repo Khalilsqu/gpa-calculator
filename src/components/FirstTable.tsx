@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import {
   DialogActions,
@@ -33,17 +34,16 @@ import CellRenderer from "components/CellRenderer";
 
 const FirstTable = ({
   gpaRecord,
-  setGpaRecord,
   repeatCredits,
   newCredits,
   setHasChanges,
 }: {
   gpaRecord: GpaRecord;
-  setGpaRecord: (record: GpaRecord) => void;
   repeatCredits: number;
   newCredits: number;
   setHasChanges: (hasChanges: boolean) => void;
 }) => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { enqueueSnackbar } = useSnackbar();
 
   const theme = useTheme();
@@ -278,17 +278,20 @@ const FirstTable = ({
         cgpa = 0;
       }
 
-      const updatedRecord = {
-        ...gpaRecord,
-        currentGradePoints: Number(updatedData[0].gradePoints),
-        currentAttemptedCredits: Number(updatedData[0].creditsAttempted),
-        currentCGPA: Number(cgpa.toFixed(2)),
-        expectedGradePoints: expectedGradePoints,
-        expectedAttemptedCredits: expectedAttemptedCredits,
-        expectedCGPA: Number(expectedCGPA.toFixed(2)),
-      };
+      searchParams.set("currentGradePoints", updatedData[0].gradePoints);
+      searchParams.set(
+        "currentAttemptedCredits",
+        updatedData[0].creditsAttempted
+      );
+      searchParams.set("currentCGPA", cgpa.toFixed(2));
+      searchParams.set("expectedGradePoints", expectedGradePoints.toString());
+      searchParams.set(
+        "expectedAttemptedCredits",
+        expectedAttemptedCredits.toString()
+      );
+      searchParams.set("expectedCGPA", expectedCGPA.toFixed(2).toString());
 
-      setGpaRecord(updatedRecord);
+      setSearchParams(searchParams);
 
       table.setEditingRow(null);
 

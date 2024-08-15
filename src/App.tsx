@@ -51,11 +51,12 @@ export interface GpaNewCourse {
 }
 
 export default function App() {
+  console.count("App");
   const [searchParams, setSearchParams] = useSearchParams();
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.up("sm"));
 
-  const initialGpaRecord = {
+  const gpaRecord = {
     semGpaRepeat: Number(searchParams.get("semGpaRepeat")) || 0,
     semGpaNew: Number(searchParams.get("semGpaNew")) || 0,
     currentGradePoints: Number(searchParams.get("currentGradePoints")) || 0,
@@ -67,21 +68,14 @@ export default function App() {
       Number(searchParams.get("expectedAttemptedCredits")) || 0,
     expectedCGPA: Number(searchParams.get("expectedCGPA")) || 0,
     overallSemGpa: Number(searchParams.get("overallSemGpa")) || 0,
-  };
+  } as GpaRecord;
 
-  const initialGpaRepeatCourses = JSON.parse(
+  const gpaRepeatCourses = JSON.parse(
     searchParams.get("gpaRepeatCourses") || "[]"
-  );
-  const initialGpaNewCourses = JSON.parse(
+  ) as GpaRepeatCourse[];
+  const gpaNewCourses = JSON.parse(
     searchParams.get("gpaNewCourses") || "[]"
-  );
-
-  const [gpaRecord, setGpaRecord] = useState<GpaRecord>(initialGpaRecord);
-  const [gpaRepeatCourses, setGpaRepeatCourses] = useState<GpaRepeatCourse[]>(
-    initialGpaRepeatCourses
-  );
-  const [gpaNewCourses, setGpaNewCourses] =
-    useState<GpaNewCourse[]>(initialGpaNewCourses);
+  ) as GpaNewCourse[];
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
   const [deleteRecordID, setDeleteRecordID] = useState<string>("");
@@ -93,100 +87,26 @@ export default function App() {
 
   const { enqueueSnackbar } = useSnackbar();
 
-  useEffect(() => {
-    calculateGpaValues();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gpaRepeatCourses, gpaNewCourses]);
-
-  useEffect(() => {
-    const params = {
-      ...Object.keys(gpaRecord).reduce((acc: Record<string, string>, key) => {
-        acc[key] = gpaRecord[key as keyof GpaRecord].toString();
-        return acc;
-      }, {}),
-      gpaRepeatCourses: JSON.stringify(gpaRepeatCourses),
-      gpaNewCourses: JSON.stringify(gpaNewCourses),
-    };
-    setSearchParams(params);
-  }, [gpaRecord, gpaRepeatCourses, gpaNewCourses, setSearchParams]);
-
-  const calculateGpaValues = () => {
-    const sumSemPointsRepeat = gpaRepeatCourses.reduce((acc, course) => {
-      return acc + course.semPoints;
-    }, 0);
-
-    const sumPointsRepeat = gpaRepeatCourses.reduce((acc, course) => {
-      return acc + course.points;
-    }, 0);
-
-    const sumCreditsRepeat = gpaRepeatCourses.reduce((acc, course) => {
-      const credit = Number(course.credit);
-      return acc + credit;
-    }, 0);
-
-    const sumSemPointsNew = gpaNewCourses.reduce((acc, course) => {
-      return acc + course.semPoints;
-    }, 0);
-
-    const sumCreditsNew = gpaNewCourses.reduce((acc, course) => {
-      const credit = Number(course.credit);
-      return acc + credit;
-    }, 0);
-
-    const semGpaRepeat = sumCreditsRepeat
-      ? sumSemPointsRepeat / sumCreditsRepeat
-      : 0;
-
-    const semGpaNew = sumCreditsNew ? sumSemPointsNew / sumCreditsNew : 0;
-
-    const totalSemPoints = sumSemPointsRepeat + sumSemPointsNew;
-    const totalCredits = sumCreditsRepeat + sumCreditsNew;
-
-    const overallSemGpa = totalCredits ? totalSemPoints / totalCredits : 0;
-
-    const expectedGradePoints =
-      sumPointsRepeat + sumSemPointsNew + gpaRecord.currentGradePoints;
-    const expectedAttemptedCredits =
-      sumCreditsNew + gpaRecord.currentAttemptedCredits;
-
-    let expectedCGPA = expectedAttemptedCredits
-      ? (expectedGradePoints / expectedAttemptedCredits).toFixed(2)
-      : "0.00";
-
-    if (
-      Number(expectedAttemptedCredits) === 0 ||
-      isNaN(parseFloat(expectedCGPA))
-    ) {
-      expectedCGPA = "0.00";
-    }
-
-    setGpaRecord((prevRecord) => ({
-      ...prevRecord,
-      semGpaRepeat: semGpaRepeat,
-      semGpaNew: semGpaNew,
-      overallSemGpa: overallSemGpa,
-      expectedGradePoints: expectedGradePoints,
-      expectedAttemptedCredits: expectedAttemptedCredits,
-      expectedCGPA: parseFloat(expectedCGPA),
-    }));
-  };
-
   const handleUpdateCourse = (course: GpaNewCourse | GpaRepeatCourse) => {
     if ("oldGrade" in course) {
       const { semPoints, points } = calculateSemPointsAndPoints(course);
       course.points = points;
       course.semPoints = semPoints;
-
-      setGpaRepeatCourses((prevCourses) =>
-        prevCourses.map((c) => (c.id === course.id ? course : c))
+      const updatedCourses = gpaRepeatCourses.map((c) =>
+        c.id === course.id ? course : c
       );
+
+      searchParams.set("gpaRepeatCourses", JSON.stringify(updatedCourses));
+      setSearchParams(searchParams);
     } else {
       const semPoints = calculateSemPoints(course);
       course.semPoints = semPoints;
-
-      setGpaNewCourses((prevCourses) =>
-        prevCourses.map((c) => (c.id === course.id ? course : c))
+      const updatedCourses = gpaNewCourses.map((c) =>
+        c.id === course.id ? course : c
       );
+
+      searchParams.set("gpaNewCourses", JSON.stringify(updatedCourses));
+      setSearchParams(searchParams);
     }
 
     setHasChanges(true);
@@ -198,8 +118,6 @@ export default function App() {
 
   const handleAddCourse = (course: GpaNewCourse | GpaRepeatCourse) => {
     if ("oldGrade" in course) {
-      // do not allow adding a repeat course if the ((current credits attempted - credits of the courses in the repeat table) - credits of the course being added) < 0
-
       const sumCreditsRepeat = gpaRepeatCourses.reduce((acc, course) => {
         const credit = Number(course.credit);
         return acc + credit;
@@ -230,12 +148,21 @@ export default function App() {
       course.points = points;
       course.semPoints = semPoints;
 
-      setGpaRepeatCourses((prevCourses) => [...prevCourses, course]);
+      searchParams.set(
+        "gpaRepeatCourses",
+        JSON.stringify([...gpaRepeatCourses, course])
+      );
+
+      setSearchParams(searchParams);
     } else {
       const semPoints = calculateSemPoints(course);
       course.semPoints = semPoints;
 
-      setGpaNewCourses((prevCourses) => [...prevCourses, course]);
+      searchParams.set(
+        "gpaNewCourses",
+        JSON.stringify([...gpaNewCourses, course])
+      );
+      setSearchParams(searchParams);
     }
 
     setHasChanges(true);
@@ -247,11 +174,19 @@ export default function App() {
 
   const handleDeleteCourse = (id: string, isRepeat: boolean) => {
     if (isRepeat) {
-      setGpaRepeatCourses((prevCourses) =>
-        prevCourses.filter((c) => c.id !== id)
+      searchParams.set(
+        "gpaRepeatCourses",
+        JSON.stringify(gpaRepeatCourses.filter((c) => c.id !== id))
       );
+
+      setSearchParams(searchParams);
     } else {
-      setGpaNewCourses((prevCourses) => prevCourses.filter((c) => c.id !== id));
+      searchParams.set(
+        "gpaNewCourses",
+        JSON.stringify(gpaNewCourses.filter((c) => c.id !== id))
+      );
+
+      setSearchParams(searchParams);
     }
     enqueueSnackbar("Course deleted successfully", { variant: "success" });
     setHasChanges(true);
@@ -264,38 +199,92 @@ export default function App() {
   };
 
   const handleReset = () => {
-    const newGpaRecord = {
-      semGpaRepeat: 0,
-      semGpaNew: 0,
-      currentGradePoints: 0,
-      currentAttemptedCredits: 0,
-      currentCGPA: 0,
-      expectedGradePoints: 0,
-      expectedAttemptedCredits: 0,
-      expectedCGPA: 0,
-      overallSemGpa: 0,
-    };
-    setGpaRecord(newGpaRecord);
-    setGpaRepeatCourses([]);
-    setGpaNewCourses([]);
+    searchParams.set("semGpaRepeat", "0");
+    searchParams.set("semGpaNew", "0");
+    searchParams.set("overallSemGpa", "0");
+    searchParams.set("expectedGradePoints", "0");
+    searchParams.set("expectedAttemptedCredits", "0");
+    searchParams.set("expectedCGPA", "0");
+    searchParams.set("currentGradePoints", "0");
+    searchParams.set("currentAttemptedCredits", "0");
+    searchParams.set("currentCGPA", "0");
 
-    const initialParams = {
-      ...Object.keys(newGpaRecord).reduce(
-        (acc: Record<string, string>, key) => {
-          acc[key] = newGpaRecord[key as keyof GpaRecord].toString();
-          return acc;
-        },
-        {}
-      ),
-      gpaRepeatCourses: JSON.stringify([]),
-      gpaNewCourses: JSON.stringify([]),
-    };
-
-    setSearchParams(initialParams);
+    searchParams.set("gpaRepeatCourses", JSON.stringify([]));
+    searchParams.set("gpaNewCourses", JSON.stringify([]));
     enqueueSnackbar("All data has been reset", { variant: "success" });
     setResetDialogOpen(false);
     setHasChanges(false);
   };
+
+  useEffect(() => {
+    const calculateGpaValues = () => {
+      const sumSemPointsRepeat = gpaRepeatCourses.reduce((acc, course) => {
+        return acc + course.semPoints;
+      }, 0);
+
+      const sumPointsRepeat = gpaRepeatCourses.reduce((acc, course) => {
+        return acc + course.points;
+      }, 0);
+
+      const sumCreditsRepeat = gpaRepeatCourses.reduce((acc, course) => {
+        const credit = Number(course.credit);
+        return acc + credit;
+      }, 0);
+
+      const sumSemPointsNew = gpaNewCourses.reduce((acc, course) => {
+        return acc + course.semPoints;
+      }, 0);
+
+      const sumCreditsNew = gpaNewCourses.reduce((acc, course) => {
+        const credit = Number(course.credit);
+        return acc + credit;
+      }, 0);
+
+      const semGpaRepeat = sumCreditsRepeat
+        ? sumSemPointsRepeat / sumCreditsRepeat
+        : 0;
+
+      const semGpaNew = sumCreditsNew ? sumSemPointsNew / sumCreditsNew : 0;
+
+      const totalSemPoints = sumSemPointsRepeat + sumSemPointsNew;
+      const totalCredits = sumCreditsRepeat + sumCreditsNew;
+
+      const overallSemGpa = totalCredits ? totalSemPoints / totalCredits : 0;
+
+      const expectedGradePoints =
+        sumPointsRepeat + sumSemPointsNew + gpaRecord.currentGradePoints;
+      const expectedAttemptedCredits =
+        sumCreditsNew + gpaRecord.currentAttemptedCredits;
+
+      let expectedCGPA = expectedAttemptedCredits
+        ? (expectedGradePoints / expectedAttemptedCredits).toFixed(2)
+        : "0.00";
+
+      if (
+        Number(expectedAttemptedCredits) === 0 ||
+        isNaN(parseFloat(expectedCGPA))
+      ) {
+        expectedCGPA = "0.00";
+      }
+
+      searchParams.set("semGpaRepeat", semGpaRepeat.toString());
+      searchParams.set("semGpaNew", semGpaNew.toString());
+      searchParams.set("overallSemGpa", overallSemGpa.toString());
+      searchParams.set("expectedGradePoints", expectedGradePoints.toString());
+      searchParams.set(
+        "expectedAttemptedCredits",
+        expectedAttemptedCredits.toString()
+      );
+      searchParams.set("expectedCGPA", expectedCGPA.toString());
+    };
+    calculateGpaValues();
+  }, [
+    gpaRepeatCourses,
+    gpaNewCourses,
+    gpaRecord.currentGradePoints,
+    gpaRecord.currentAttemptedCredits,
+    searchParams,
+  ]);
 
   return (
     <Box sx={{ display: "flex", width: "100%", overflowX: "hidden" }}>
@@ -365,7 +354,6 @@ export default function App() {
         <Box sx={{ overflowX: "auto", width: "100%" }}>
           <FirstTable
             gpaRecord={gpaRecord}
-            setGpaRecord={setGpaRecord}
             repeatCredits={gpaRepeatCourses.reduce((acc, course) => {
               return acc + Number(course.credit);
             }, 0)}
