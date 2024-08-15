@@ -51,7 +51,6 @@ export interface GpaNewCourse {
 }
 
 export default function App() {
-  console.count("App");
   const [searchParams, setSearchParams] = useSearchParams();
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.up("sm"));
