@@ -1,24 +1,15 @@
 import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import FirstTable from "components/FirstTable";
 import CourseTable from "components/CourseTable";
-import {
-  Typography,
-  Divider,
-  Box,
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  useMediaQuery,
-} from "@mui/material";
+import { Typography, Divider, Box, useMediaQuery } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { useSnackbar, closeSnackbar } from "notistack";
 import { gradeValueLabel as gradeLabels } from "constants/gradeValueLabel";
 import { calculateSemPointsAndPoints, calculateSemPoints } from "helpers";
 import DeleteDialogTable from "components/DeleteDialogTable";
+import ResetDialog from "components/ResetDialog";
+import Header from "components/Header";
+import { useGpaCalculator } from "hooks/useGpaCalculator";
 
 export interface GpaRecord {
   semGpaRepeat: number;
@@ -51,30 +42,17 @@ export interface GpaNewCourse {
 }
 
 export default function App() {
-  const [searchParams, setSearchParams] = useSearchParams();
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.up("sm"));
 
-  const gpaRecord = {
-    semGpaRepeat: Number(searchParams.get("semGpaRepeat")) || 0,
-    semGpaNew: Number(searchParams.get("semGpaNew")) || 0,
-    currentGradePoints: Number(searchParams.get("currentGradePoints")) || 0,
-    currentAttemptedCredits:
-      Number(searchParams.get("currentAttemptedCredits")) || 0,
-    currentCGPA: Number(searchParams.get("currentCGPA")) || 0,
-    expectedGradePoints: Number(searchParams.get("expectedGradePoints")) || 0,
-    expectedAttemptedCredits:
-      Number(searchParams.get("expectedAttemptedCredits")) || 0,
-    expectedCGPA: Number(searchParams.get("expectedCGPA")) || 0,
-    overallSemGpa: Number(searchParams.get("overallSemGpa")) || 0,
-  } as GpaRecord;
-
-  const gpaRepeatCourses = JSON.parse(
-    searchParams.get("gpaRepeatCourses") || "[]"
-  ) as GpaRepeatCourse[];
-  const gpaNewCourses = JSON.parse(
-    searchParams.get("gpaNewCourses") || "[]"
-  ) as GpaNewCourse[];
+  const {
+    gpaRecord,
+    gpaRepeatCourses,
+    gpaNewCourses,
+    calculateGpaValues,
+    searchParams,
+    setSearchParams,
+  } = useGpaCalculator();
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
   const [deleteRecordID, setDeleteRecordID] = useState<string>("");
@@ -240,91 +218,6 @@ export default function App() {
     setHasChanges(false);
   };
 
-  const calculateGpaValues = () => {
-    // Re-fetch gpaRecord from searchParams to ensure it's up-to-date
-    const gpaRecord = {
-      semGpaRepeat: Number(searchParams.get("semGpaRepeat")) || 0,
-      semGpaNew: Number(searchParams.get("semGpaNew")) || 0,
-      currentGradePoints: Number(searchParams.get("currentGradePoints")) || 0,
-      currentAttemptedCredits:
-        Number(searchParams.get("currentAttemptedCredits")) || 0,
-      currentCGPA: Number(searchParams.get("currentCGPA")) || 0,
-      expectedGradePoints: Number(searchParams.get("expectedGradePoints")) || 0,
-      expectedAttemptedCredits:
-        Number(searchParams.get("expectedAttemptedCredits")) || 0,
-      expectedCGPA: Number(searchParams.get("expectedCGPA")) || 0,
-      overallSemGpa: Number(searchParams.get("overallSemGpa")) || 0,
-    };
-
-    const gpaRepeatCourses = JSON.parse(
-      searchParams.get("gpaRepeatCourses") || "[]"
-    ) as GpaRepeatCourse[];
-
-    const gpaNewCourses = JSON.parse(
-      searchParams.get("gpaNewCourses") || "[]"
-    ) as GpaNewCourse[];
-
-    const sumSemPointsRepeat = gpaRepeatCourses.reduce((acc, course) => {
-      return acc + course.semPoints;
-    }, 0);
-
-    const sumPointsRepeat = gpaRepeatCourses.reduce((acc, course) => {
-      return acc + course.points;
-    }, 0);
-
-    const sumCreditsRepeat = gpaRepeatCourses.reduce((acc, course) => {
-      const credit = Number(course.credit);
-      return acc + credit;
-    }, 0);
-
-    const sumSemPointsNew = gpaNewCourses.reduce((acc, course) => {
-      return acc + course.semPoints;
-    }, 0);
-
-    const sumCreditsNew = gpaNewCourses.reduce((acc, course) => {
-      const credit = Number(course.credit);
-      return acc + credit;
-    }, 0);
-
-    const semGpaRepeat = sumCreditsRepeat
-      ? sumSemPointsRepeat / sumCreditsRepeat
-      : 0;
-
-    const semGpaNew = sumCreditsNew ? sumSemPointsNew / sumCreditsNew : 0;
-
-    const totalSemPoints = sumSemPointsRepeat + sumSemPointsNew;
-    const totalCredits = sumCreditsRepeat + sumCreditsNew;
-
-    const overallSemGpa = totalCredits ? totalSemPoints / totalCredits : 0;
-
-    const expectedGradePoints =
-      sumPointsRepeat + sumSemPointsNew + gpaRecord.currentGradePoints;
-    const expectedAttemptedCredits =
-      sumCreditsNew + gpaRecord.currentAttemptedCredits;
-
-    let expectedCGPA = expectedAttemptedCredits
-      ? (expectedGradePoints / expectedAttemptedCredits).toFixed(2)
-      : "0.00";
-
-    if (
-      Number(expectedAttemptedCredits) === 0 ||
-      isNaN(parseFloat(expectedCGPA))
-    ) {
-      expectedCGPA = "0.00";
-    }
-
-    searchParams.set("semGpaRepeat", semGpaRepeat.toString());
-    searchParams.set("semGpaNew", semGpaNew.toString());
-    searchParams.set("overallSemGpa", overallSemGpa.toString());
-    searchParams.set("expectedGradePoints", expectedGradePoints.toString());
-    searchParams.set(
-      "expectedAttemptedCredits",
-      expectedAttemptedCredits.toString()
-    );
-    searchParams.set("expectedCGPA", expectedCGPA.toString());
-    setSearchParams(searchParams);
-  };
-
   return (
     <Box sx={{ display: "flex", width: "100%", overflowX: "hidden" }}>
       <Box
@@ -336,60 +229,10 @@ export default function App() {
           overflowX: "hidden",
         }}
       >
-        {hasChanges ? (
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              position: "relative",
-              marginBottom: "2rem",
-            }}
-          >
-            <Typography
-              variant="h5"
-              sx={{
-                margin: "2rem 0",
-                maxWidth: "65vw", // Adjust max width for mobile
-                fontSize: { xs: "1rem", sm: "1.5rem" }, // Responsive font size
-                [theme.breakpoints.up("sm")]: {
-                  position: "absolute",
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                  overflow: "hidden",
-                },
-              }}
-            >
-              GPA Calculator - Probation students
-            </Typography>
-            <Box
-              sx={{
-                flexGrow: 1,
-                [theme.breakpoints.up("sm")]: { display: "block" },
-              }}
-            />
-            <Button
-              variant="contained"
-              color="secondary"
-              onClick={() => setResetDialogOpen(true)}
-              style={{ textTransform: "none" }}
-            >
-              Reset
-            </Button>
-          </Box>
-        ) : (
-          <Typography
-            variant="h5"
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              marginBottom: "2rem",
-              fontSize: { xs: "1.2rem", sm: "1.5rem" },
-            }}
-          >
-            GPA Calculator - Probation students
-          </Typography>
-        )}
+        <Header
+          hasChanges={hasChanges}
+          onReset={() => setResetDialogOpen(true)}
+        />
         <Box sx={{ overflowX: "auto", width: "100%" }}>
           <FirstTable
             gpaRecord={gpaRecord}
@@ -483,21 +326,11 @@ export default function App() {
         deleteAction={handleDeleteCourse}
         isRepeat={isRepeat}
       />
-      <Dialog open={resetDialogOpen} onClose={() => setResetDialogOpen(false)}>
-        <DialogTitle>Reset All Data</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Repeat and new courses will be deleted. GPA records will be set to
-            0. Are you sure you want to reset all data?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setResetDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleReset} color="primary">
-            Reset
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <ResetDialog
+        open={resetDialogOpen}
+        onClose={() => setResetDialogOpen(false)}
+        onReset={handleReset}
+      />
     </Box>
   );
 }

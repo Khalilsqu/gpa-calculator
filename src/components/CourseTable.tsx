@@ -222,16 +222,22 @@ const CourseTable = ({
         isRepeat,
       });
 
-      if (isRepeat) {
-        const otherDataCodes = newData.map((course) => course.code);
+      const normalizedCode = values.code.toLowerCase();
 
-        if (otherDataCodes.includes(values.code)) {
+      if (isRepeat) {
+        const otherDataCodes = newData.map((course) =>
+          course.code.toLowerCase()
+        );
+
+        if (otherDataCodes.includes(normalizedCode)) {
           errors["code"] = "Course code already exists in the other table";
         }
       } else {
-        const otherDataCodes = repeatData.map((course) => course.code);
+        const otherDataCodes = repeatData.map((course) =>
+          course.code.toLowerCase()
+        );
 
-        if (otherDataCodes.includes(values.code)) {
+        if (otherDataCodes.includes(normalizedCode)) {
           errors["code"] = "Course code already exists in the other table";
         }
       }
@@ -245,7 +251,7 @@ const CourseTable = ({
 
       const newCourse = {
         id: new Date().toISOString(),
-        code: values.code.toUpperCase(),
+        code: values.code.toUpperCase(), // store code in uppercase
         credit: values.credit,
         ...(isRepeat
           ? { oldGrade: values.oldGrade, newGrade: values.newGrade }
@@ -289,10 +295,14 @@ const CourseTable = ({
         isRepeat,
       });
 
-      if (isRepeat) {
-        const otherDataCodes = newData.map((course) => course.code);
+      const normalizedCode = values.code.toLowerCase();
 
-        if (otherDataCodes.includes(values.code)) {
+      if (isRepeat) {
+        const otherDataCodes = newData
+          .filter((course) => course.id !== row.original.id) // Exclude the current row from the check
+          .map((course) => course.code.toLowerCase());
+
+        if (otherDataCodes.includes(normalizedCode)) {
           errors["code"] = "Course code already exists in the other table";
         }
 
@@ -317,7 +327,7 @@ const CourseTable = ({
           0
         ) {
           enqueueSnackbar(
-            `sum of credits in repeating courses cannot exceed the total attempted credits (${currentAttemptedCredits})`,
+            `Sum of credits in repeating courses cannot exceed the total attempted credits (${currentAttemptedCredits})`,
             {
               variant: "error",
               autoHideDuration: 15000,
@@ -331,9 +341,11 @@ const CourseTable = ({
           return;
         }
       } else {
-        const otherDataCodes = repeatData.map((course) => course.code);
+        const otherDataCodes = repeatData
+          .filter((course) => course.id !== row.original.id) // Exclude the current row from the check
+          .map((course) => course.code.toLowerCase());
 
-        if (otherDataCodes.includes(values.code)) {
+        if (otherDataCodes.includes(normalizedCode)) {
           errors["code"] = "Course code already exists in the other table";
         }
       }
@@ -345,7 +357,7 @@ const CourseTable = ({
 
       if (!isRepeat) {
         if (
-          values.code === row.original.code &&
+          values.code.toUpperCase() === row.original.code &&
           values.grade === row.original.grade &&
           values.credit === row.original.credit
         ) {
@@ -355,7 +367,7 @@ const CourseTable = ({
         }
       } else {
         if (
-          values.code === row.original.code &&
+          values.code.toUpperCase() === row.original.code &&
           values.oldGrade === row.original.oldGrade &&
           values.newGrade === row.original.newGrade &&
           values.credit === row.original.credit
@@ -369,12 +381,13 @@ const CourseTable = ({
       if (isRepeat) {
         const newRecord = {
           id: row.original.id,
-          code: values.code.toUpperCase(),
+          code: values.code.toUpperCase(), // store the code in uppercase
           oldGrade: values.oldGrade,
           newGrade: values.newGrade,
           credit: values.credit,
         };
-        // check if expected C.GPA is greater than 4
+
+        // Check if expected C.GPA is greater than 4
         if (
           willExceedMaxCGPA(
             gpaRecord,
@@ -399,10 +412,11 @@ const CourseTable = ({
       } else {
         const newRecord = {
           id: row.original.id,
-          code: values.code.toUpperCase(),
+          code: values.code.toUpperCase(), // store the code in uppercase
           grade: values.grade,
           credit: values.credit,
         };
+
         updateAction(newRecord as GpaNewCourse);
       }
 
@@ -565,8 +579,10 @@ const validate = ({
 }) => {
   const errors: Record<string, string | undefined> = {};
 
-  // check if any of the required fields are empty
+  // Normalize the course code to lowercase for consistent comparison
+  const normalizedCode = values.code.toLowerCase();
 
+  // Check if any of the required fields are empty
   if (!values.code) {
     errors["code"] = "Course code is required";
   }
@@ -628,7 +644,9 @@ const validate = ({
   }
 
   if (method === "handleCreate") {
-    const duplicateCourse = data.find((course) => course.code === values.code);
+    const duplicateCourse = data.find(
+      (course) => course.code.toLowerCase() === normalizedCode
+    );
 
     if (duplicateCourse) {
       errors["code"] = "Course code already exists";
